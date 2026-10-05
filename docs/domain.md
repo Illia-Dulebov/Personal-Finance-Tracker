@@ -74,6 +74,7 @@ An entity that shows monthly limit for certain category
 - identifier
 - amount
 - category
+- currency
 
 ### Behaviour
 - validate its amount - non negative

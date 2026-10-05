@@ -39,6 +39,9 @@ Never recalculated automatically.
 - Budgets are monthly.
 - The period follows calendar months.
 - A budget applies from the first day to the last day of the month.
+- All budgets use the default currency.
+- Budget amounts are stored in the default currency.
+- Expenses in other currencies are converted to the budget currency using their historical conversion information.
 
 If a category has expenses but no budget exists:
 

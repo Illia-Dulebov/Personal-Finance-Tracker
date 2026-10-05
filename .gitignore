@@ -46,3 +46,4 @@ app.*.map.json
 
 # Project documentation
 docs/roadmap.md
+docs/developer_context.md

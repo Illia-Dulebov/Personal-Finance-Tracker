@@ -118,6 +118,27 @@ Expected result:
 - Related totals are updated: budget, statistics
 
 
+### Delete Expense
+
+Goal:
+User wants to delete existing expense
+
+Starting point:
+Home screen
+
+Flow:
+
+1. User selects the "Delete expense"
+2. User confirms deleting expense
+
+Expected result:
+
+- Expense is deleted.
+- Expense disappears from dashboard.
+- Related totals are updated: budget, statistics and etc.
+
+
+
 ### Budget setting
 
 Goal:
@@ -160,6 +181,31 @@ Expected result:
 
 - Recurring rule is correctly validated.
 - Recurring rule is created
+- Recurring rules are checked during the app entrance
+- If it is due date of recurring expense, the app will automatically create this expense
+
+### Recurring rule updating
+
+Goal:
+User wants to update recurring expense
+
+Starting point:
+Budget screen
+
+Flow:
+
+1. User opens the "Budget"
+2. User opens "Recurring expenses" tab
+3. User press button "Update recurring expense"
+4. User inputs the Expense without receipt and date
+5. User inputs checkmark of the period - monthly, weekly or daily
+6. User inputs the day of the expense happening
+7. User presses confirm button
+
+Expected result:
+
+- Recurring rule is correctly validated
+- Recurring rule is updated
 - Recurring rules are checked during the app entrance
 - If it is due date of recurring expense, the app will automatically create this expense
 
