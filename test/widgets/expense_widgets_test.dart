@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:personal_finance_tracker/core/constants/app_constants.dart';
+import 'package:personal_finance_tracker/features/currency/data/data_sources/static_currency_data_source.dart';
+import 'package:personal_finance_tracker/features/currency/data/repositories/static_currency_repository.dart';
+import 'package:personal_finance_tracker/features/currency/domain/entities/currency_code.dart';
 import 'package:personal_finance_tracker/features/expenses/domain/entities/expense.dart';
 import 'package:personal_finance_tracker/features/expenses/domain/repositories/expense_repository.dart';
 import 'package:personal_finance_tracker/features/expenses/domain/usecases/create_expense.dart';
@@ -30,7 +33,8 @@ class FakeExpenseRepository implements ExpenseRepository {
   }
 
   @override
-  Future<void> deleteExpense(String id) async => _expenses.removeWhere((e) => e.id == id);
+  Future<void> deleteExpense(String id) async =>
+      _expenses.removeWhere((e) => e.id == id);
 }
 
 void main() {
@@ -39,7 +43,7 @@ void main() {
   final testExpense = Expense(
     id: 'test-1',
     amount: 150.0,
-    currency: 'ALL',
+    currency: CurrencyCode.all,
     date: DateTime(2026, 3, 30, 12, 0),
     category: sampleCategory,
     paymentMethod: PaymentMethod.cash,
@@ -47,7 +51,9 @@ void main() {
   );
 
   group('1. ExpenseItemCard Widget Tests', () {
-    testWidgets('Renders expense details correctly and handles callbacks', (tester) async {
+    testWidgets('Renders expense details correctly and handles callbacks', (
+      tester,
+    ) async {
       bool tapped = false;
       bool deleted = false;
 
@@ -80,10 +86,16 @@ void main() {
   });
 
   group('2. AddEditExpenseScreen Form & Validation Tests', () {
-    testWidgets('Shows validation errors on empty or invalid amount input', (tester) async {
+    testWidgets('Shows validation errors on empty or invalid amount input', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: AddEditExpenseScreen(),
+        MaterialApp(
+          home: AddEditExpenseScreen(
+            currencyRepository: StaticCurrencyRepository(
+              dataSource: StaticCurrencyDataSource(),
+            ),
+          ),
         ),
       );
 
@@ -101,21 +113,61 @@ void main() {
       expect(find.text('Amount must be a positive number'), findsOneWidget);
     });
 
-    testWidgets('Edit Mode: Pre-fills data and enforces Currency Immutability', (tester) async {
+    testWidgets(
+      'Edit Mode: Pre-fills data and enforces Currency Immutability',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AddEditExpenseScreen(
+              expense: testExpense,
+              currencyRepository: StaticCurrencyRepository(
+                dataSource: StaticCurrencyDataSource(),
+              ),
+            ),
+          ),
+        );
+
+        // Verify title shows Edit Expense
+        expect(find.text('Wireframe: Edit Expense'), findsOneWidget);
+
+        // Verify pre-filled description
+        expect(find.text('Lunch with team'), findsOneWidget);
+
+        // Verify Currency is immutable text and not an editable TextFormField
+        expect(find.text('Currency: ALL (Immutable)'), findsOneWidget);
+      },
+    );
+
+    testWidgets('Shows a base-currency estimate using the selected currency', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: AddEditExpenseScreen(expense: testExpense),
+          home: AddEditExpenseScreen(
+            currencyRepository: StaticCurrencyRepository(
+              dataSource: StaticCurrencyDataSource(),
+            ),
+          ),
         ),
       );
 
-      // Verify title shows Edit Expense
-      expect(find.text('Wireframe: Edit Expense'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).first, '10');
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Approximate equivalent: 10.00 ALL'),
+        findsOneWidget,
+      );
 
-      // Verify pre-filled description
-      expect(find.text('Lunch with team'), findsOneWidget);
+      await tester.tap(find.byType(DropdownButtonFormField<CurrencyCode>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('EUR - Euro').last);
+      await tester.pumpAndSettle();
 
-      // Verify Currency is immutable text and not an editable TextFormField
-      expect(find.text('Currency: ALL (Immutable)'), findsOneWidget);
+      expect(
+        find.textContaining('Approximate equivalent: 1000.00 ALL'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('reference rate; not live'), findsOneWidget);
     });
   });
 
@@ -127,7 +179,10 @@ void main() {
       fakeRepo = FakeExpenseRepository();
       cubit = ExpenseCubit(
         getExpensesUseCase: GetExpensesUseCase(fakeRepo as dynamic),
-        createExpenseUseCase: CreateExpenseUseCase(fakeRepo as dynamic),
+        createExpenseUseCase: CreateExpenseUseCase(
+          fakeRepo as dynamic,
+          StaticCurrencyRepository(dataSource: StaticCurrencyDataSource()),
+        ),
         updateExpenseUseCase: UpdateExpenseUseCase(fakeRepo as dynamic),
         deleteExpenseUseCase: DeleteExpenseUseCase(fakeRepo as dynamic),
       );
@@ -137,7 +192,9 @@ void main() {
       cubit.close();
     });
 
-    testWidgets('Displays empty state message when list is empty', (tester) async {
+    testWidgets('Displays empty state message when list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: BlocProvider.value(

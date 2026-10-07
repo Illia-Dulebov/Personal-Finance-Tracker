@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection_container.dart';
+import '../../../currency/domain/repositories/currency_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../cubit/expense_cubit.dart';
 import '../cubit/expense_state.dart';
@@ -24,7 +26,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   Future<void> _navigateToAddExpense() async {
     final newExpense = await Navigator.of(context).push<Expense>(
       MaterialPageRoute(
-        builder: (_) => const AddEditExpenseScreen(),
+        builder: (_) =>
+            AddEditExpenseScreen(currencyRepository: sl<CurrencyRepository>()),
       ),
     );
 
@@ -36,7 +39,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   Future<void> _navigateToEditExpense(Expense expense) async {
     final updatedExpense = await Navigator.of(context).push<Expense>(
       MaterialPageRoute(
-        builder: (_) => AddEditExpenseScreen(expense: expense),
+        builder: (_) => AddEditExpenseScreen(
+          expense: expense,
+          currencyRepository: sl<CurrencyRepository>(),
+        ),
       ),
     );
 
@@ -52,9 +58,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Wireframe: Personal Finance Tracker'),
-      ),
+      appBar: AppBar(title: const Text('Wireframe: Personal Finance Tracker')),
       body: const _ExpenseListBody(),
       floatingActionButton: OutlinedButton.icon(
         onPressed: _navigateToAddExpense,
@@ -73,23 +77,28 @@ class _ExpenseListBody extends StatelessWidget {
     return BlocBuilder<ExpenseCubit, ExpenseState>(
       builder: (context, state) {
         return switch (state) {
-          ExpenseInitialState() || ExpenseLoadingState() =>
-            const Center(child: CircularProgressIndicator()),
+          ExpenseInitialState() || ExpenseLoadingState() => const Center(
+            child: CircularProgressIndicator(),
+          ),
           ExpenseEmptyState() => const _EmptyStateView(),
-          ExpenseErrorState(message: final msg) => _ErrorStateView(message: msg),
+          ExpenseErrorState(message: final msg) => _ErrorStateView(
+            message: msg,
+          ),
           ExpenseLoadedState(expenses: final expenses) => ListView.builder(
-              itemCount: expenses.length,
-              itemBuilder: (context, index) {
-                final expense = expenses[index];
-                return ExpenseItemCard(
-                  expense: expense,
-                  onTap: () =>
-                      context.findAncestorStateOfType<_ExpenseListScreenState>()?._navigateToEditExpense(expense),
-                  onDelete: () =>
-                      context.findAncestorStateOfType<_ExpenseListScreenState>()?._deleteExpense(expense.id),
-                );
-              },
-            ),
+            itemCount: expenses.length,
+            itemBuilder: (context, index) {
+              final expense = expenses[index];
+              return ExpenseItemCard(
+                expense: expense,
+                onTap: () => context
+                    .findAncestorStateOfType<_ExpenseListScreenState>()
+                    ?._navigateToEditExpense(expense),
+                onDelete: () => context
+                    .findAncestorStateOfType<_ExpenseListScreenState>()
+                    ?._deleteExpense(expense.id),
+              );
+            },
+          ),
         };
       },
     );

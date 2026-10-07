@@ -1,6 +1,9 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/currency/data/data_sources/static_currency_data_source.dart';
+import '../../features/currency/data/repositories/static_currency_repository.dart';
+import '../../features/currency/domain/repositories/currency_repository.dart';
 import '../../features/expenses/data/data_sources/local/expense_local_data_source.dart';
 import '../../features/expenses/data/repositories/expense_repository_impl.dart';
 import '../../features/expenses/domain/repositories/expense_repository.dart';
@@ -22,6 +25,10 @@ Future<void> initInjection() async {
   // --------------------------------------------------------------------------
   // Data Sources
   // --------------------------------------------------------------------------
+  sl.registerLazySingleton<StaticCurrencyDataSource>(
+    () => StaticCurrencyDataSource(),
+  );
+
   sl.registerLazySingleton<ExpenseLocalDataSource>(
     () => ExpenseLocalDataSourceImpl(prefs: sl()),
   );
@@ -29,6 +36,9 @@ Future<void> initInjection() async {
   // --------------------------------------------------------------------------
   // Repositories
   // --------------------------------------------------------------------------
+  sl.registerLazySingleton<CurrencyRepository>(
+    () => StaticCurrencyRepository(dataSource: sl()),
+  );
   sl.registerLazySingleton<ExpenseRepository>(
     () => ExpenseRepositoryImpl(localDataSource: sl()),
   );
@@ -37,7 +47,7 @@ Future<void> initInjection() async {
   // Use Cases
   // --------------------------------------------------------------------------
   sl.registerFactory(() => GetExpensesUseCase(sl()));
-  sl.registerFactory(() => CreateExpenseUseCase(sl()));
+  sl.registerFactory(() => CreateExpenseUseCase(sl(), sl()));
   sl.registerFactory(() => UpdateExpenseUseCase(sl()));
   sl.registerFactory(() => DeleteExpenseUseCase(sl()));
 

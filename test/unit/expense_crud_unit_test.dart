@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal_finance_tracker/core/constants/app_constants.dart';
+import 'package:personal_finance_tracker/features/currency/data/data_sources/static_currency_data_source.dart';
+import 'package:personal_finance_tracker/features/currency/data/repositories/static_currency_repository.dart';
+import 'package:personal_finance_tracker/features/currency/domain/entities/currency_code.dart';
 import 'package:personal_finance_tracker/features/expenses/data/data_sources/local/expense_local_data_source.dart';
 import 'package:personal_finance_tracker/features/expenses/data/models/expense_model.dart';
 import 'package:personal_finance_tracker/features/expenses/data/repositories/expense_repository_impl.dart';
@@ -23,6 +26,7 @@ void main() {
   late CreateExpenseUseCase createExpenseUseCase;
   late UpdateExpenseUseCase updateExpenseUseCase;
   late DeleteExpenseUseCase deleteExpenseUseCase;
+  late StaticCurrencyRepository currencyRepository;
   late ExpenseCubit cubit;
 
   final sampleCategory = AppConstants.defaultCategories.first;
@@ -30,21 +34,29 @@ void main() {
   final testExpense1 = Expense(
     id: '1',
     amount: 100.0,
-    currency: 'ALL',
+    currency: CurrencyCode.all,
     date: DateTime(2026, 3, 30, 10, 0),
     category: sampleCategory,
     paymentMethod: PaymentMethod.cash,
     description: 'Groceries',
+    amountInBaseCurrency: 100.0,
+    exchangeRateToBaseCurrency: 1.0,
+    conversionBaseCurrency: CurrencyCode.all,
+    conversionRateCapturedAt: DateTime(2026, 3, 30),
   );
 
   final testExpense2 = Expense(
     id: '2',
     amount: 250.0,
-    currency: 'ALL',
+    currency: CurrencyCode.all,
     date: DateTime(2026, 3, 30, 15, 0),
     category: sampleCategory,
     paymentMethod: PaymentMethod.card,
     description: 'Bus ticket',
+    amountInBaseCurrency: 250.0,
+    exchangeRateToBaseCurrency: 1.0,
+    conversionBaseCurrency: CurrencyCode.all,
+    conversionRateCapturedAt: DateTime(2026, 3, 30),
   );
 
   setUp(() async {
@@ -53,8 +65,12 @@ void main() {
     dataSource = ExpenseLocalDataSourceImpl(prefs: prefs);
     repository = ExpenseRepositoryImpl(localDataSource: dataSource);
 
+    currencyRepository = StaticCurrencyRepository(
+      dataSource: StaticCurrencyDataSource(),
+      clock: () => DateTime(2026, 3, 30),
+    );
     getExpensesUseCase = GetExpensesUseCase(repository);
-    createExpenseUseCase = CreateExpenseUseCase(repository);
+    createExpenseUseCase = CreateExpenseUseCase(repository, currencyRepository);
     updateExpenseUseCase = UpdateExpenseUseCase(repository);
     deleteExpenseUseCase = DeleteExpenseUseCase(repository);
 
@@ -115,7 +131,10 @@ void main() {
 
     test('updateExpense modifies record in repository', () async {
       await repository.addExpense(testExpense1);
-      final updated = testExpense1.copyWith(amount: 500.0, description: 'Updated Groceries');
+      final updated = testExpense1.copyWith(
+        amount: 500.0,
+        description: 'Updated Groceries',
+      );
 
       await repository.updateExpense(updated);
 
@@ -142,7 +161,10 @@ void main() {
       var expenses = await getExpensesUseCase();
       expect(expenses.length, 1);
 
-      final updated = testExpense1.copyWith(amount: 300.0);
+      final updated = testExpense1.copyWith(
+        amount: 300.0,
+        amountInBaseCurrency: 300.0,
+      );
       await updateExpenseUseCase(updated);
       expenses = await getExpensesUseCase();
       expect(expenses.first.amount, 300.0);
@@ -158,15 +180,18 @@ void main() {
       expect(cubit.state, const ExpenseInitialState());
     });
 
-    test('loadExpenses emits [Loading, Empty] when no expenses exist', () async {
-      final expectedStates = [
-        const ExpenseLoadingState(),
-        const ExpenseEmptyState(),
-      ];
+    test(
+      'loadExpenses emits [Loading, Empty] when no expenses exist',
+      () async {
+        final expectedStates = [
+          const ExpenseLoadingState(),
+          const ExpenseEmptyState(),
+        ];
 
-      expectLater(cubit.stream, emitsInOrder(expectedStates));
-      await cubit.loadExpenses();
-    });
+        expectLater(cubit.stream, emitsInOrder(expectedStates));
+        await cubit.loadExpenses();
+      },
+    );
 
     test('addExpense creates expense and emits [Loading, Loaded]', () async {
       final expectedStates = [
@@ -178,29 +203,38 @@ void main() {
       await cubit.addExpense(testExpense1);
     });
 
-    test('updateExpense modifies expense and emits updated [Loading, Loaded]', () async {
-      await cubit.addExpense(testExpense1);
+    test(
+      'updateExpense modifies expense and emits updated [Loading, Loaded]',
+      () async {
+        await cubit.addExpense(testExpense1);
 
-      final updated = testExpense1.copyWith(amount: 800.0);
-      final expectedStates = [
-        const ExpenseLoadingState(),
-        ExpenseLoadedState([updated]),
-      ];
+        final updated = testExpense1.copyWith(
+          amount: 800.0,
+          amountInBaseCurrency: 800.0,
+        );
+        final expectedStates = [
+          const ExpenseLoadingState(),
+          ExpenseLoadedState([updated]),
+        ];
 
-      expectLater(cubit.stream, emitsInOrder(expectedStates));
-      await cubit.updateExpense(updated);
-    });
+        expectLater(cubit.stream, emitsInOrder(expectedStates));
+        await cubit.updateExpense(updated);
+      },
+    );
 
-    test('deleteExpense removes last expense and emits [Loading, Empty]', () async {
-      await cubit.addExpense(testExpense1);
+    test(
+      'deleteExpense removes last expense and emits [Loading, Empty]',
+      () async {
+        await cubit.addExpense(testExpense1);
 
-      final expectedStates = [
-        const ExpenseLoadingState(),
-        const ExpenseEmptyState(),
-      ];
+        final expectedStates = [
+          const ExpenseLoadingState(),
+          const ExpenseEmptyState(),
+        ];
 
-      expectLater(cubit.stream, emitsInOrder(expectedStates));
-      await cubit.deleteExpense('1');
-    });
+        expectLater(cubit.stream, emitsInOrder(expectedStates));
+        await cubit.deleteExpense('1');
+      },
+    );
   });
 }

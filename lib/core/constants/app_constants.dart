@@ -9,15 +9,15 @@ enum PaymentMethod {
 
   static PaymentMethod fromString(String value) {
     return PaymentMethod.values.firstWhere(
-      (e) => e.label.toLowerCase() == value.toLowerCase() || e.name.toLowerCase() == value.toLowerCase(),
+      (e) =>
+          e.label.toLowerCase() == value.toLowerCase() ||
+          e.name.toLowerCase() == value.toLowerCase(),
       orElse: () => PaymentMethod.cash,
     );
   }
 }
 
 class AppConstants {
-  static const String defaultCurrency = 'ALL';
-
   static const List<Category> defaultCategories = [
     Category(id: 'food', name: 'Food & Dining', emoji: '🍔'),
     Category(id: 'transport', name: 'Transportation', emoji: '🚗'),

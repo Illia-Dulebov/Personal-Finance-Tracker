@@ -8,10 +8,14 @@ currency management, etc
 ## Currency conversion
 
 - Expenses store original amount and currency.
-- Conversion rate is captured at expense creation.
+- ALL is the default/base currency for MVP conversions.
+- MVP supports ALL, EUR, and USD with configurable static reference rates.
+- Reference rates are approximate and are not live market rates.
+- The applied conversion rate, converted amount, base currency, and rate capture timestamp are stored with the expense.
 - Historical expenses are not recalculated when exchange rates change.
 
-Implementation: Expense will contain necessary historical info as exchange currency, base currency
+The capture timestamp records when the app applied the rate; it is not the expense date or a rate-provider validity date.
+Legacy expenses in ALL can be converted exactly at 1:1. Legacy foreign-currency expenses without a saved rate retain their original amount and have no inferred converted value.
 
 ---
 

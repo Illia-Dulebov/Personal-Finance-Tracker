@@ -8,11 +8,12 @@ import 'features/expenses/presentation/screens/expense_list_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initInjection();
-  runApp(const MyApp());
+  
+  runApp(const ExpenseTrackerApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ExpenseTrackerApp extends StatelessWidget {
+  const ExpenseTrackerApp({super.key});
 
   @override
   Widget build(BuildContext context) {

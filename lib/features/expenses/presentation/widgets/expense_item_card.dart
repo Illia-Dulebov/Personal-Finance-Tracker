@@ -37,11 +37,8 @@ class ExpenseItemCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              '${expense.amount.toStringAsFixed(2)} ${expense.currency.value}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
