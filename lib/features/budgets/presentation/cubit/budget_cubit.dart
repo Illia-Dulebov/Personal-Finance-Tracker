@@ -39,7 +39,17 @@ class BudgetCubit extends Cubit<BudgetState> {
     emit(const BudgetLoadingState());
     try {
       final summaries = await getMonthlyBudgetOverviewUseCase(month);
-      emit(BudgetLoadedState(month: month, summaries: summaries));
+      final totalBudgetAmount = summaries.fold<double>(
+        0,
+        (total, summary) => total + (summary.budgetAmount ?? 0),
+      );
+      emit(
+        BudgetLoadedState(
+          month: month,
+          summaries: summaries,
+          totalBudgetAmount: totalBudgetAmount,
+        ),
+      );
     } on Exception {
       emit(const BudgetErrorState('Unable to load budget information.'));
     }

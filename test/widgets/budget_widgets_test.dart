@@ -80,6 +80,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('March 2026'), findsOneWidget);
+    expect(find.text('Total budgets: 0.00 ALL'), findsOneWidget);
     expect(find.text('Spent: 50.00 ALL'), findsOneWidget);
     expect(find.text('No limit configured'), findsOneWidget);
 
@@ -91,6 +92,7 @@ void main() {
 
     expect(find.text('Budget: 100.00 ALL'), findsOneWidget);
     expect(find.text('Remaining: 50.00 ALL'), findsOneWidget);
+    expect(find.text('Total budgets: 100.00 ALL'), findsOneWidget);
     expect(find.text('No limit configured'), findsNothing);
   });
 }

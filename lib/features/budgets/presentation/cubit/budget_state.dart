@@ -20,11 +20,16 @@ class BudgetLoadingState extends BudgetState {
 class BudgetLoadedState extends BudgetState {
   final DateTime month;
   final List<BudgetCategorySummary> summaries;
+  final double totalBudgetAmount;
 
-  const BudgetLoadedState({required this.month, required this.summaries});
+  const BudgetLoadedState({
+    required this.month,
+    required this.summaries,
+    required this.totalBudgetAmount,
+  });
 
   @override
-  List<Object?> get props => [month, summaries];
+  List<Object?> get props => [month, summaries, totalBudgetAmount];
 }
 
 class BudgetErrorState extends BudgetState {

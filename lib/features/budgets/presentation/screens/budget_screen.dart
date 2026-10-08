@@ -81,6 +81,13 @@ class _BudgetOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Text(
+            'Total budgets: ${state.totalBudgetAmount.toStringAsFixed(2)} ALL',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
         _MonthSelector(
           month: state.month,
           onPreviousMonth: onPreviousMonth,
