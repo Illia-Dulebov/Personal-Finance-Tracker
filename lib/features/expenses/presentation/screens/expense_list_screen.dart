@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../budgets/presentation/cubit/budget_cubit.dart';
+import '../../../budgets/presentation/screens/budget_screen.dart';
 import '../../../currency/domain/repositories/currency_repository.dart';
 import '../../domain/entities/expense.dart';
 import '../cubit/expense_cubit.dart';
 import '../cubit/expense_state.dart';
+import '../widgets/delete_expense_confirmation_dialog.dart';
 import '../widgets/expense_item_card.dart';
 import 'add_edit_expense_screen.dart';
 
@@ -32,7 +35,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
 
     if (newExpense != null && mounted) {
-      context.read<ExpenseCubit>().addExpense(newExpense);
+      await context.read<ExpenseCubit>().addExpense(newExpense);
+      await _refreshBudget();
     }
   }
 
@@ -47,18 +51,53 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
 
     if (updatedExpense != null && mounted) {
-      context.read<ExpenseCubit>().updateExpense(updatedExpense);
+      await context.read<ExpenseCubit>().updateExpense(updatedExpense);
+      await _refreshBudget();
     }
   }
 
-  void _deleteExpense(String id) {
-    context.read<ExpenseCubit>().deleteExpense(id);
+  Future<void> _confirmDeleteExpense(String id) async {
+    final shouldDelete = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (_) => const DeleteExpenseConfirmationDialog(),
+    );
+
+    if (shouldDelete == true && mounted) {
+      await context.read<ExpenseCubit>().deleteExpense(id);
+      await _refreshBudget();
+    }
+  }
+
+  Future<void> _refreshBudget() async {
+    final budgetCubit = context.read<BudgetCubit?>();
+    if (budgetCubit != null) {
+      await budgetCubit.refresh();
+    }
+  }
+
+  Future<void> _navigateToBudgets() {
+    final budgetCubit = context.read<BudgetCubit>();
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            BlocProvider.value(value: budgetCubit, child: const BudgetScreen()),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Wireframe: Personal Finance Tracker')),
+      appBar: AppBar(
+        title: const Text('Wireframe: Personal Finance Tracker'),
+        actions: [
+          IconButton(
+            onPressed: _navigateToBudgets,
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: 'Monthly budgets',
+          ),
+        ],
+      ),
       body: const _ExpenseListBody(),
       floatingActionButton: OutlinedButton.icon(
         onPressed: _navigateToAddExpense,
@@ -95,7 +134,7 @@ class _ExpenseListBody extends StatelessWidget {
                     ?._navigateToEditExpense(expense),
                 onDelete: () => context
                     .findAncestorStateOfType<_ExpenseListScreenState>()
-                    ?._deleteExpense(expense.id),
+                    ?._confirmDeleteExpense(expense.id),
               );
             },
           ),

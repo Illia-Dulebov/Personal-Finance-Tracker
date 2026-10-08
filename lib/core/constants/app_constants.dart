@@ -19,12 +19,12 @@ enum PaymentMethod {
 
 class AppConstants {
   static const List<Category> defaultCategories = [
-    Category(id: 'food', name: 'Food & Dining', emoji: '🍔'),
-    Category(id: 'transport', name: 'Transportation', emoji: '🚗'),
-    Category(id: 'bills', name: 'Bills & Utilities', emoji: '💡'),
-    Category(id: 'shopping', name: 'Shopping', emoji: '🛍️'),
-    Category(id: 'entertainment', name: 'Entertainment', emoji: '🎬'),
+    Category(id: 'food', name: 'Food', emoji: '🍔'),
+    Category(id: 'housing', name: 'Housing', emoji: '🏠'),
+    Category(id: 'transport', name: 'Transport', emoji: '🚗'),
     Category(id: 'health', name: 'Health', emoji: '🏥'),
-    Category(id: 'general', name: 'General', emoji: '💰'),
+    Category(id: 'entertainment', name: 'Entertainment', emoji: '🎬'),
+    Category(id: 'shopping', name: 'Shopping', emoji: '🛍️'),
+    Category(id: 'bills', name: 'Bills', emoji: '💡'),
   ];
 }

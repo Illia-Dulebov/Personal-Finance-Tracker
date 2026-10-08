@@ -4,6 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/currency/data/data_sources/static_currency_data_source.dart';
 import '../../features/currency/data/repositories/static_currency_repository.dart';
 import '../../features/currency/domain/repositories/currency_repository.dart';
+import '../../features/budgets/data/data_sources/local/budget_local_data_source.dart';
+import '../../features/budgets/data/repositories/budget_repository_impl.dart';
+import '../../features/budgets/domain/repositories/budget_repository.dart';
+import '../../features/budgets/domain/usecases/get_monthly_budget_overview.dart';
+import '../../features/budgets/domain/usecases/save_monthly_budget.dart';
+import '../../features/budgets/presentation/cubit/budget_cubit.dart';
 import '../../features/expenses/data/data_sources/local/expense_local_data_source.dart';
 import '../../features/expenses/data/repositories/expense_repository_impl.dart';
 import '../../features/expenses/domain/repositories/expense_repository.dart';
@@ -32,6 +38,9 @@ Future<void> initInjection() async {
   sl.registerLazySingleton<ExpenseLocalDataSource>(
     () => ExpenseLocalDataSourceImpl(prefs: sl()),
   );
+  sl.registerLazySingleton<BudgetLocalDataSource>(
+    () => BudgetLocalDataSource(prefs: sl()),
+  );
 
   // --------------------------------------------------------------------------
   // Repositories
@@ -42,6 +51,9 @@ Future<void> initInjection() async {
   sl.registerLazySingleton<ExpenseRepository>(
     () => ExpenseRepositoryImpl(localDataSource: sl()),
   );
+  sl.registerLazySingleton<BudgetRepository>(
+    () => BudgetRepositoryImpl(localDataSource: sl()),
+  );
 
   // --------------------------------------------------------------------------
   // Use Cases
@@ -50,6 +62,13 @@ Future<void> initInjection() async {
   sl.registerFactory(() => CreateExpenseUseCase(sl(), sl()));
   sl.registerFactory(() => UpdateExpenseUseCase(sl()));
   sl.registerFactory(() => DeleteExpenseUseCase(sl()));
+  sl.registerFactory(
+    () => GetMonthlyBudgetOverviewUseCase(
+      budgetRepository: sl(),
+      expenseRepository: sl(),
+    ),
+  );
+  sl.registerFactory(() => SaveMonthlyBudgetUseCase(sl()));
 
   // --------------------------------------------------------------------------
   // Cubit
@@ -60,6 +79,12 @@ Future<void> initInjection() async {
       createExpenseUseCase: sl(),
       updateExpenseUseCase: sl(),
       deleteExpenseUseCase: sl(),
+    ),
+  );
+  sl.registerFactory(
+    () => BudgetCubit(
+      getMonthlyBudgetOverviewUseCase: sl(),
+      saveMonthlyBudgetUseCase: sl(),
     ),
   );
 }

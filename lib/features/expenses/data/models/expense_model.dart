@@ -37,6 +37,16 @@ class ExpenseModel extends Expense {
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
     final amount = (json['amount'] as num).toDouble();
     final currency = CurrencyCode.fromValue(json['currency'] as String);
+    final categoryJson = json['category'] as Map<String, dynamic>;
+    final categoryId = categoryJson['id'] as String;
+    final category = AppConstants.defaultCategories.firstWhere(
+      (item) => item.id == categoryId,
+      orElse: () => Category(
+        id: categoryId,
+        name: categoryJson['name'] as String,
+        emoji: categoryJson['emoji'] as String,
+      ),
+    );
     final legacyBaseCurrencyExpense =
         currency == CurrencyCode.all &&
         json['amountInBaseCurrency'] == null &&
@@ -47,11 +57,7 @@ class ExpenseModel extends Expense {
       amount: amount,
       currency: currency,
       date: DateTime.parse(json['date'] as String),
-      category: Category(
-        id: json['category']['id'] as String,
-        name: json['category']['name'] as String,
-        emoji: json['category']['emoji'] as String,
-      ),
+      category: category,
       paymentMethod: PaymentMethod.fromString(json['paymentMethod'] as String),
       description: json['description'] as String,
       amountInBaseCurrency:

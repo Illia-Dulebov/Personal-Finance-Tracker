@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -8,6 +9,8 @@ import '../../../currency/domain/entities/currency_code.dart';
 import '../../../currency/domain/repositories/currency_repository.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
+import '../cubit/conversion_preview_cubit.dart';
+import '../cubit/conversion_preview_state.dart';
 
 class AddEditExpenseScreen extends StatefulWidget {
   final Expense? expense;
@@ -33,10 +36,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   late PaymentMethod _selectedPaymentMethod;
   late DateTime _selectedDate;
   late CurrencyCode _selectedCurrency;
-  String? _conversionPreview;
-  String? _conversionError;
-  bool _isLoadingConversion = false;
-  int _conversionRequest = 0;
+  late ConversionPreviewCubit _conversionPreviewCubit;
 
   bool get _isEditing => widget.expense != null;
 
@@ -52,7 +52,6 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       text: expense != null ? expense.description : '',
     );
     _selectedCurrency = expense?.currency ?? CurrencyCode.all;
-    _amountController.addListener(_refreshConversionPreview);
 
     _selectedCategory = expense != null
         ? AppConstants.defaultCategories.firstWhere(
@@ -66,100 +65,33 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         : PaymentMethod.cash;
 
     _selectedDate = expense != null ? expense.date : DateTime.now();
-    _refreshConversionPreview(notify: false);
+    _conversionPreviewCubit = ConversionPreviewCubit(
+      currencyRepository: widget.currencyRepository,
+    );
+    _amountController.addListener(_refreshConversionPreview);
+    _refreshConversionPreview();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _conversionPreviewCubit.close();
     super.dispose();
   }
 
-  Future<void> _refreshConversionPreview({bool notify = true}) async {
-    final request = ++_conversionRequest;
+  void _refreshConversionPreview() {
     final amount = double.tryParse(_amountController.text.trim());
-    if (amount == null || !amount.isFinite || amount <= 0) {
-      if (notify) {
-        setState(() {
-          _conversionPreview = null;
-          _conversionError = null;
-          _isLoadingConversion = false;
-        });
-      } else {
-        _conversionPreview = null;
-        _conversionError = null;
-        _isLoadingConversion = false;
-      }
-      return;
-    }
-
     final expense = widget.expense;
     final historicalRate =
         expense?.exchangeRateToBaseCurrency ??
         (expense?.currency == CurrencyCode.all ? 1.0 : null);
-    if (expense != null && historicalRate == null) {
-      if (notify) {
-        setState(() {
-          _conversionPreview = null;
-          _conversionError =
-              'No historical conversion is available for this expense.';
-          _isLoadingConversion = false;
-        });
-      } else {
-        _conversionPreview = null;
-        _conversionError =
-            'No historical conversion is available for this expense.';
-        _isLoadingConversion = false;
-      }
-      return;
-    }
-
-    if (notify) {
-      setState(() {
-        _conversionPreview = null;
-        _conversionError = null;
-        _isLoadingConversion = true;
-      });
-    } else {
-      _isLoadingConversion = true;
-    }
-
-    try {
-      final rate =
-          historicalRate ??
-          (await widget.currencyRepository.getRateToBaseCurrency(
-            _selectedCurrency,
-          )).rate;
-      final convertedAmount = amount * rate;
-      if (!rate.isFinite || rate <= 0 || !convertedAmount.isFinite) {
-        throw StateError(
-          'The exchange rate produced an invalid converted amount.',
-        );
-      }
-      if (!mounted || request != _conversionRequest) return;
-      setState(() {
-        _conversionPreview =
-            '${convertedAmount.toStringAsFixed(2)} ${CurrencyCode.all.value}';
-        _conversionError = null;
-        _isLoadingConversion = false;
-      });
-    } on Exception catch (error) {
-      _showConversionError(request, error);
-    } on ArgumentError catch (error) {
-      _showConversionError(request, error);
-    } on StateError catch (error) {
-      _showConversionError(request, error);
-    }
-  }
-
-  void _showConversionError(int request, Object error) {
-    if (!mounted || request != _conversionRequest) return;
-    setState(() {
-      _conversionPreview = null;
-      _conversionError = 'Unable to calculate conversion: $error';
-      _isLoadingConversion = false;
-    });
+    _conversionPreviewCubit.refresh(
+      amount: amount,
+      currency: _selectedCurrency,
+      isEditing: expense != null,
+      historicalRate: historicalRate,
+    );
   }
 
   Future<void> _pickDate() async {
@@ -207,36 +139,36 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? 'Wireframe: Edit Expense' : 'Wireframe: Add Expense',
+    return BlocProvider.value(
+      value: _conversionPreviewCubit,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            _isEditing ? 'Wireframe: Edit Expense' : 'Wireframe: Add Expense',
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: _ExpenseForm(
-          formKey: _formKey,
-          amountController: _amountController,
-          descriptionController: _descriptionController,
-          isEditing: _isEditing,
-          existingCurrency: widget.expense?.currency,
-          selectedCurrency: _selectedCurrency,
-          conversionPreview: _conversionPreview,
-          conversionError: _conversionError,
-          isLoadingConversion: _isLoadingConversion,
-          selectedCategory: _selectedCategory,
-          selectedPaymentMethod: _selectedPaymentMethod,
-          selectedDate: _selectedDate,
-          onCurrencyChanged: (currency) {
-            setState(() => _selectedCurrency = currency);
-            _refreshConversionPreview();
-          },
-          onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
-          onPaymentMethodChanged: (pm) =>
-              setState(() => _selectedPaymentMethod = pm),
-          onPickDate: _pickDate,
-          onSubmit: _submit,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: _ExpenseForm(
+            formKey: _formKey,
+            amountController: _amountController,
+            descriptionController: _descriptionController,
+            isEditing: _isEditing,
+            existingCurrency: widget.expense?.currency,
+            selectedCurrency: _selectedCurrency,
+            selectedCategory: _selectedCategory,
+            selectedPaymentMethod: _selectedPaymentMethod,
+            selectedDate: _selectedDate,
+            onCurrencyChanged: (currency) {
+              setState(() => _selectedCurrency = currency);
+              _refreshConversionPreview();
+            },
+            onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
+            onPaymentMethodChanged: (pm) =>
+                setState(() => _selectedPaymentMethod = pm),
+            onPickDate: _pickDate,
+            onSubmit: _submit,
+          ),
         ),
       ),
     );
@@ -250,9 +182,6 @@ class _ExpenseForm extends StatelessWidget {
   final bool isEditing;
   final CurrencyCode? existingCurrency;
   final CurrencyCode selectedCurrency;
-  final String? conversionPreview;
-  final String? conversionError;
-  final bool isLoadingConversion;
   final Category selectedCategory;
   final PaymentMethod selectedPaymentMethod;
   final DateTime selectedDate;
@@ -269,9 +198,6 @@ class _ExpenseForm extends StatelessWidget {
     required this.isEditing,
     this.existingCurrency,
     required this.selectedCurrency,
-    this.conversionPreview,
-    this.conversionError,
-    required this.isLoadingConversion,
     required this.selectedCategory,
     required this.selectedPaymentMethod,
     required this.selectedDate,
@@ -334,21 +260,37 @@ class _ExpenseForm extends StatelessWidget {
             ),
             const SizedBox(height: 16),
           ],
-          if (isLoadingConversion)
-            const Text('Calculating base-currency equivalent...')
-          else if (conversionError != null)
-            Text(
-              conversionError!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            )
-          else if (conversionPreview != null)
-            Text(
-              'Approximate equivalent: $conversionPreview'
-              '${isEditing ? '' : ' (reference rate; not live)'}',
-            ),
-          if (conversionPreview != null || conversionError != null) ...[
-            const SizedBox(height: 16),
-          ],
+          BlocBuilder<ConversionPreviewCubit, ConversionPreviewState>(
+            builder: (context, state) {
+              if (state.isLoading) {
+                return const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text('Calculating base-currency equivalent...'),
+                );
+              }
+              if (state.error != null) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    state.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                );
+              }
+              if (state.preview != null) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'Approximate equivalent: ${state.preview}'
+                    '${isEditing ? '' : ' (reference rate; not live)'}',
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           DropdownButtonFormField<Category>(
             initialValue: selectedCategory,
             decoration: const InputDecoration(

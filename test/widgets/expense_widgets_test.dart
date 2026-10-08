@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -225,6 +226,68 @@ void main() {
 
       expect(find.text('Lunch with team'), findsOneWidget);
       expect(find.text('150.00 ALL'), findsOneWidget);
+    });
+
+    testWidgets('requires confirmation before deleting an expense', (
+      tester,
+    ) async {
+      await fakeRepo.addExpense(testExpense);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: cubit,
+            child: const ExpenseListScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CupertinoAlertDialog), findsNothing);
+      expect(find.text('Delete expense?'), findsOneWidget);
+      expect(find.text('This action cannot be undone.'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Lunch with team'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No expenses recorded yet.'), findsOneWidget);
+    });
+
+    testWidgets('uses a Cupertino confirmation dialog on iOS', (tester) async {
+      await fakeRepo.addExpense(testExpense);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.iOS),
+          home: BlocProvider.value(
+            value: cubit,
+            child: const ExpenseListScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+      expect(find.text('Delete expense?'), findsOneWidget);
+      expect(find.text('This action cannot be undone.'), findsOneWidget);
+      expect(find.byType(CupertinoDialogAction), findsNWidgets(2));
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Lunch with team'), findsOneWidget);
     });
   });
 }
