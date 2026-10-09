@@ -39,7 +39,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Monthly budgets')),
+      appBar: AppBar(title: const Text('Budget')),
       body: BlocBuilder<BudgetCubit, BudgetState>(
         builder: (context, state) => switch (state) {
           BudgetInitialState() || BudgetLoadingState() => const Center(
@@ -81,11 +81,25 @@ class _BudgetOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Text(
-            'Total budgets: ${state.totalBudgetAmount.toStringAsFixed(2)} ALL',
-            style: Theme.of(context).textTheme.titleLarge,
+        Card(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'Total budgets: ${state.totalBudgetAmount.toStringAsFixed(2)} ALL',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Category limits for the selected month',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                ),
+              ],
+            ),
           ),
         ),
         _MonthSelector(

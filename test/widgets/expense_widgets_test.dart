@@ -129,7 +129,7 @@ void main() {
         );
 
         // Verify title shows Edit Expense
-        expect(find.text('Wireframe: Edit Expense'), findsOneWidget);
+        expect(find.text('Edit Expense'), findsOneWidget);
 
         // Verify pre-filled description
         expect(find.text('Lunch with team'), findsOneWidget);
@@ -193,17 +193,20 @@ void main() {
       cubit.close();
     });
 
+    Widget buildExpenseListApp({ThemeData? theme}) {
+      return MaterialApp(
+        theme: theme,
+        home: BlocProvider.value(
+          value: cubit,
+          child: const ExpenseListScreen(),
+        ),
+      );
+    }
+
     testWidgets('Displays empty state message when list is empty', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider.value(
-            value: cubit,
-            child: const ExpenseListScreen(),
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildExpenseListApp());
 
       await tester.pumpAndSettle();
 
@@ -213,14 +216,7 @@ void main() {
     testWidgets('Displays expense items when loaded', (tester) async {
       await fakeRepo.addExpense(testExpense);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider.value(
-            value: cubit,
-            child: const ExpenseListScreen(),
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildExpenseListApp());
 
       await tester.pumpAndSettle();
 
@@ -228,19 +224,89 @@ void main() {
       expect(find.text('150.00 ALL'), findsOneWidget);
     });
 
+    testWidgets('shows current-month total in ALL using saved conversions', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      await fakeRepo.addExpense(
+        Expense(
+          id: 'all-current-month',
+          amount: 15,
+          currency: CurrencyCode.all,
+          date: now,
+          category: sampleCategory,
+          paymentMethod: PaymentMethod.cash,
+          description: 'ALL expense',
+        ),
+      );
+      await fakeRepo.addExpense(
+        Expense(
+          id: 'eur-current-month',
+          amount: 2,
+          currency: CurrencyCode.eur,
+          date: now,
+          category: sampleCategory,
+          paymentMethod: PaymentMethod.card,
+          description: 'EUR expense',
+          amountInBaseCurrency: 200,
+          exchangeRateToBaseCurrency: 100,
+          conversionBaseCurrency: CurrencyCode.all,
+        ),
+      );
+      await fakeRepo.addExpense(
+        Expense(
+          id: 'unknown-currency',
+          amount: 50,
+          currency: CurrencyCode.usd,
+          date: now,
+          category: sampleCategory,
+          paymentMethod: PaymentMethod.cash,
+          description: 'Unknown conversion',
+        ),
+      );
+
+      await tester.pumpWidget(buildExpenseListApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('215.00 ALL'), findsOneWidget);
+    });
+
+    testWidgets('shows six recent expenses and can reveal the full list', (
+      tester,
+    ) async {
+      for (var index = 0; index < 7; index++) {
+        await fakeRepo.addExpense(
+          Expense(
+            id: 'expense-$index',
+            amount: index + 1,
+            currency: CurrencyCode.all,
+            date: DateTime.now().subtract(Duration(days: index)),
+            category: sampleCategory,
+            paymentMethod: PaymentMethod.cash,
+            description: 'Expense $index',
+          ),
+        );
+      }
+
+      await tester.pumpWidget(buildExpenseListApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('View all'), findsOneWidget);
+      expect(find.text('Expense 6'), findsNothing);
+      await tester.tap(find.text('View all'));
+      await tester.pumpAndSettle();
+      expect(find.text('Show recent'), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, -800));
+      await tester.pumpAndSettle();
+      expect(find.text('Expense 6'), findsOneWidget);
+    });
+
     testWidgets('requires confirmation before deleting an expense', (
       tester,
     ) async {
       await fakeRepo.addExpense(testExpense);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider.value(
-            value: cubit,
-            child: const ExpenseListScreen(),
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildExpenseListApp());
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.delete_outline));
@@ -267,13 +333,7 @@ void main() {
       await fakeRepo.addExpense(testExpense);
 
       await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(platform: TargetPlatform.iOS),
-          home: BlocProvider.value(
-            value: cubit,
-            child: const ExpenseListScreen(),
-          ),
-        ),
+        buildExpenseListApp(theme: ThemeData(platform: TargetPlatform.iOS)),
       );
       await tester.pumpAndSettle();
 

@@ -143,9 +143,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       value: _conversionPreviewCubit,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            _isEditing ? 'Wireframe: Edit Expense' : 'Wireframe: Add Expense',
-          ),
+          title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

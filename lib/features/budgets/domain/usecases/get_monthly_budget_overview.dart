@@ -35,14 +35,14 @@ class GetMonthlyBudgetOverviewUseCase {
       if (!_isInPeriod(expense, periodStart, periodEnd)) {
         continue;
       }
-      final amountInBaseCurrency = _amountInBaseCurrency(expense);
-      if (amountInBaseCurrency == null) {
+      final expenseAmountInBaseCurrency = _amountInAll(expense);
+      if (expenseAmountInBaseCurrency == null) {
         continue;
       }
       spendingByCategory.update(
         expense.category.id,
-        (amount) => amount + amountInBaseCurrency,
-        ifAbsent: () => amountInBaseCurrency,
+        (amount) => amount + expenseAmountInBaseCurrency,
+        ifAbsent: () => expenseAmountInBaseCurrency,
       );
     }
 
@@ -63,7 +63,7 @@ class GetMonthlyBudgetOverviewUseCase {
     return !expense.date.isBefore(start) && expense.date.isBefore(end);
   }
 
-  double? _amountInBaseCurrency(Expense expense) {
+  double? _amountInAll(Expense expense) {
     if (expense.conversionBaseCurrency == CurrencyCode.all) {
       return expense.amountInBaseCurrency ??
           (expense.currency == CurrencyCode.all ? expense.amount : null);

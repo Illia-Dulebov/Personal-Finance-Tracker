@@ -8,7 +8,9 @@ import 'package:personal_finance_tracker/main.dart' as app;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('End-To-End Expense Lifecycle (Create -> Edit -> Delete)', (tester) async {
+  testWidgets('End-To-End Expense Lifecycle (Create -> Edit -> Delete)', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
 
     app.main();
@@ -17,11 +19,27 @@ void main() {
     // 1. Initial State: Confirm empty dashboard
     expect(find.text('No expenses recorded yet.'), findsOneWidget);
 
+    // Verify the main destinations and return to Home before exercising expenses.
+    await tester.tap(find.text('Statistics').first);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Basic expense statistics will be added in a later step.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Budget').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Total budgets: 0.00 ALL'), findsOneWidget);
+
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
+    expect(find.text('No expenses recorded yet.'), findsOneWidget);
+
     // 2. Open Add Expense form
     await tester.tap(find.text('Add Expense'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Wireframe: Add Expense'), findsOneWidget);
+    expect(find.text('Add Expense'), findsOneWidget);
 
     // 3. Fill in Form
     final amountField = find.byType(TextFormField).first;
@@ -43,7 +61,7 @@ void main() {
     await tester.tap(find.text('Dinner'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Wireframe: Edit Expense'), findsOneWidget);
+    expect(find.text('Edit Expense'), findsOneWidget);
     expect(find.text('Currency: ALL (Immutable)'), findsOneWidget);
 
     // Edit amount to 200

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/di/injection_container.dart';
+import 'core/navigation/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'features/budgets/presentation/cubit/budget_cubit.dart';
 import 'features/expenses/presentation/cubit/expense_cubit.dart';
-import 'features/expenses/presentation/screens/expense_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,15 +19,15 @@ class ExpenseTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Personal Finance Tracker',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
-      home: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => sl<ExpenseCubit>()),
-          BlocProvider(create: (_) => sl<BudgetCubit>()),
-        ],
-        child: const ExpenseListScreen(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<ExpenseCubit>()),
+        BlocProvider(create: (_) => sl<BudgetCubit>()),
+      ],
+      child: MaterialApp.router(
+        title: 'Personal Finance Tracker',
+        theme: AppTheme.light,
+        routerConfig: appRouter,
       ),
     );
   }
