@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../budgets/presentation/cubit/budget_cubit.dart';
-import '../../../currency/domain/entities/currency_code.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/utils/expense_amount_converter.dart';
 import '../cubit/expense_cubit.dart';
 import '../cubit/expense_state.dart';
 import '../widgets/delete_expense_confirmation_dialog.dart';
@@ -122,22 +122,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           !expense.date.isBefore(nextMonthStart)) {
         continue;
       }
-      total += _amountInAll(expense) ?? 0;
+      total += amountInAll(expense) ?? 0;
     }
 
     return total;
-  }
-
-  double? _amountInAll(Expense expense) {
-    if (expense.conversionBaseCurrency == CurrencyCode.all) {
-      return expense.amountInBaseCurrency ??
-          (expense.currency == CurrencyCode.all ? expense.amount : null);
-    }
-    if (expense.currency == CurrencyCode.all &&
-        expense.conversionBaseCurrency == null) {
-      return expense.amountInBaseCurrency ?? expense.amount;
-    }
-    return null;
   }
 }
 

@@ -22,10 +22,7 @@ void main() {
     // Verify the main destinations and return to Home before exercising expenses.
     await tester.tap(find.text('Statistics').first);
     await tester.pumpAndSettle();
-    expect(
-      find.text('Basic expense statistics will be added in a later step.'),
-      findsOneWidget,
-    );
+    expect(find.text('Total spending'), findsOneWidget);
 
     await tester.tap(find.text('Budget').first);
     await tester.pumpAndSettle();
@@ -55,7 +52,19 @@ void main() {
 
     // 4. Verify item appears in dashboard
     expect(find.text('Dinner'), findsOneWidget);
-    expect(find.text('100.00 ALL'), findsOneWidget);
+    expect(find.text('100.00 ALL'), findsAtLeastNWidgets(1));
+
+    await tester.tap(find.text('Statistics').first);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('statistics-total-amount')))
+          .data,
+      '100.00 ALL',
+    );
+
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
 
     // 5. Open Edit Expense form by tapping card
     await tester.tap(find.text('Dinner'));
@@ -74,13 +83,30 @@ void main() {
     await tester.pumpAndSettle();
 
     // 6. Verify dashboard displays updated amount
-    expect(find.text('200.00 ALL'), findsOneWidget);
+    expect(find.text('200.00 ALL'), findsAtLeastNWidgets(1));
+
+    await tester.tap(find.text('Statistics').first);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('statistics-total-amount')))
+          .data,
+      '200.00 ALL',
+    );
+
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
 
     // 7. Delete expense item
     await tester.tap(find.byIcon(Icons.delete_outline));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete').last);
+    await tester.pumpAndSettle();
 
     // 8. Confirm dashboard returned to empty state
     expect(find.text('No expenses recorded yet.'), findsOneWidget);
+    await tester.tap(find.text('Statistics').first);
+    await tester.pumpAndSettle();
+    expect(find.text('0.00 ALL'), findsOneWidget);
   });
 }

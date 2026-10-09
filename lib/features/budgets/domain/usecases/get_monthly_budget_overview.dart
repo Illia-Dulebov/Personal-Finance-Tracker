@@ -1,7 +1,7 @@
 import '../../../../core/constants/app_constants.dart';
-import '../../../currency/domain/entities/currency_code.dart';
 import '../../../expenses/domain/entities/expense.dart';
 import '../../../expenses/domain/repositories/expense_repository.dart';
+import '../../../expenses/domain/utils/expense_amount_converter.dart';
 import '../entities/budget_category_summary.dart';
 import '../repositories/budget_repository.dart';
 
@@ -35,7 +35,7 @@ class GetMonthlyBudgetOverviewUseCase {
       if (!_isInPeriod(expense, periodStart, periodEnd)) {
         continue;
       }
-      final expenseAmountInBaseCurrency = _amountInAll(expense);
+      final expenseAmountInBaseCurrency = amountInAll(expense);
       if (expenseAmountInBaseCurrency == null) {
         continue;
       }
@@ -61,17 +61,5 @@ class GetMonthlyBudgetOverviewUseCase {
 
   bool _isInPeriod(Expense expense, DateTime start, DateTime end) {
     return !expense.date.isBefore(start) && expense.date.isBefore(end);
-  }
-
-  double? _amountInAll(Expense expense) {
-    if (expense.conversionBaseCurrency == CurrencyCode.all) {
-      return expense.amountInBaseCurrency ??
-          (expense.currency == CurrencyCode.all ? expense.amount : null);
-    }
-    if (expense.currency == CurrencyCode.all &&
-        expense.conversionBaseCurrency == null) {
-      return expense.amountInBaseCurrency ?? expense.amount;
-    }
-    return null;
   }
 }

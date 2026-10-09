@@ -6,6 +6,7 @@ import '../../features/currency/domain/repositories/currency_repository.dart';
 import '../../features/expenses/domain/entities/expense.dart';
 import '../../features/expenses/presentation/screens/add_edit_expense_screen.dart';
 import '../../features/expenses/presentation/screens/expense_list_screen.dart';
+import '../../features/statistics/presentation/screens/statistics_screen.dart';
 import '../di/injection_container.dart';
 
 final appRouter = GoRouter(
@@ -52,7 +53,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/statistics',
-              builder: (context, state) => const _StatisticsPlaceholder(),
+              builder: (context, state) => const StatisticsScreen(),
             ),
           ],
         ),
@@ -88,17 +89,3 @@ final appRouter = GoRouter(
     ),
   ],
 );
-
-class _StatisticsPlaceholder extends StatelessWidget {
-  const _StatisticsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Statistics')),
-      body: const Center(
-        child: Text('Basic expense statistics will be added in a later step.'),
-      ),
-    );
-  }
-}

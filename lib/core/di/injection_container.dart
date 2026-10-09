@@ -18,6 +18,8 @@ import '../../features/expenses/domain/usecases/delete_expense.dart';
 import '../../features/expenses/domain/usecases/get_expenses.dart';
 import '../../features/expenses/domain/usecases/update_expense.dart';
 import '../../features/expenses/presentation/cubit/expense_cubit.dart';
+import '../../features/statistics/domain/usecases/get_expense_statistics.dart';
+import '../../features/statistics/presentation/cubit/statistics_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -69,6 +71,7 @@ Future<void> initInjection() async {
     ),
   );
   sl.registerFactory(() => SaveMonthlyBudgetUseCase(sl()));
+  sl.registerFactory(() => GetExpenseStatisticsUseCase(sl()));
 
   // --------------------------------------------------------------------------
   // Cubit
@@ -87,4 +90,5 @@ Future<void> initInjection() async {
       saveMonthlyBudgetUseCase: sl(),
     ),
   );
+  sl.registerFactory(() => StatisticsCubit(getExpenseStatisticsUseCase: sl()));
 }
