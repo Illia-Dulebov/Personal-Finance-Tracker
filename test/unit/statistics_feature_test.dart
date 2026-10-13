@@ -128,6 +128,10 @@ void main() {
         expect(result.monthlySpending.single.amountInAll, 1300);
         expect(result.currencyDistribution, hasLength(2));
         expect(
+          result.currencyDistribution.map((item) => item.currency).toList(),
+          [CurrencyCode.all, CurrencyCode.eur],
+        );
+        expect(
           result.currencyDistribution
               .singleWhere((item) => item.currency == CurrencyCode.eur)
               .originalAmount,

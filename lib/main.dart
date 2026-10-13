@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'features/budgets/presentation/cubit/budget_cubit.dart';
 import 'features/expenses/presentation/cubit/expense_cubit.dart';
 import 'features/statistics/presentation/cubit/statistics_cubit.dart';
+import 'features/recurring_expenses/presentation/cubit/recurring_expense_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ class ExpenseTrackerApp extends StatelessWidget {
         BlocProvider(create: (_) => sl<ExpenseCubit>()),
         BlocProvider(create: (_) => sl<BudgetCubit>()),
         BlocProvider(create: (_) => sl<StatisticsCubit>()),
+        BlocProvider(create: (_) => sl<RecurringExpenseCubit>()),
       ],
       child: MaterialApp.router(
         title: 'Personal Finance Tracker',

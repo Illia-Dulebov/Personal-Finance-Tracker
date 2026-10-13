@@ -1,9 +1,11 @@
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
+import '../../../recurring_expenses/domain/repositories/generated_expense_store.dart';
 import '../data_sources/local/expense_local_data_source.dart';
 import '../models/expense_model.dart';
 
-class ExpenseRepositoryImpl implements ExpenseRepository {
+class ExpenseRepositoryImpl
+    implements ExpenseRepository, GeneratedExpenseStore {
   final ExpenseLocalDataSource localDataSource;
 
   ExpenseRepositoryImpl({required this.localDataSource});
@@ -23,6 +25,21 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     currentModels.add(newModel);
     await localDataSource.saveExpenses(currentModels);
   }
+
+  @override
+  Future<bool> saveGeneratedExpense(
+    Expense expense,
+    String occurrenceKey,
+  ) async {
+    return localDataSource.saveGeneratedExpense(
+      ExpenseModel.fromEntity(expense),
+      occurrenceKey,
+    );
+  }
+
+  @override
+  Future<bool> hasOccurrence(String occurrenceKey) async =>
+      localDataSource.hasProcessedOccurrence(occurrenceKey);
 
   @override
   Future<void> updateExpense(Expense expense) async {

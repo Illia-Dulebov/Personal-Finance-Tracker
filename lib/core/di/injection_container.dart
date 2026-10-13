@@ -20,6 +20,13 @@ import '../../features/expenses/domain/usecases/update_expense.dart';
 import '../../features/expenses/presentation/cubit/expense_cubit.dart';
 import '../../features/statistics/domain/usecases/get_expense_statistics.dart';
 import '../../features/statistics/presentation/cubit/statistics_cubit.dart';
+import '../../features/recurring_expenses/data/data_sources/local/recurring_expense_local_data_source.dart';
+import '../../features/recurring_expenses/data/repositories/recurring_expense_repository_impl.dart';
+import '../../features/recurring_expenses/domain/repositories/recurring_expense_repository.dart';
+import '../../features/recurring_expenses/domain/repositories/generated_expense_store.dart';
+import '../../features/recurring_expenses/domain/usecases/process_due_recurring_expenses.dart';
+import '../../features/recurring_expenses/domain/usecases/save_recurring_expense_rule.dart';
+import '../../features/recurring_expenses/presentation/cubit/recurring_expense_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -43,6 +50,9 @@ Future<void> initInjection() async {
   sl.registerLazySingleton<BudgetLocalDataSource>(
     () => BudgetLocalDataSource(prefs: sl()),
   );
+  sl.registerLazySingleton<RecurringExpenseLocalDataSource>(
+    () => RecurringExpenseLocalDataSource(prefs: sl()),
+  );
 
   // --------------------------------------------------------------------------
   // Repositories
@@ -50,11 +60,20 @@ Future<void> initInjection() async {
   sl.registerLazySingleton<CurrencyRepository>(
     () => StaticCurrencyRepository(dataSource: sl()),
   );
-  sl.registerLazySingleton<ExpenseRepository>(
+  sl.registerLazySingleton<ExpenseRepositoryImpl>(
     () => ExpenseRepositoryImpl(localDataSource: sl()),
+  );
+  sl.registerLazySingleton<ExpenseRepository>(
+    () => sl<ExpenseRepositoryImpl>(),
+  );
+  sl.registerLazySingleton<GeneratedExpenseStore>(
+    () => sl<ExpenseRepositoryImpl>(),
   );
   sl.registerLazySingleton<BudgetRepository>(
     () => BudgetRepositoryImpl(localDataSource: sl()),
+  );
+  sl.registerLazySingleton<RecurringExpenseRepository>(
+    () => RecurringExpenseRepositoryImpl(localDataSource: sl()),
   );
 
   // --------------------------------------------------------------------------
@@ -72,6 +91,15 @@ Future<void> initInjection() async {
   );
   sl.registerFactory(() => SaveMonthlyBudgetUseCase(sl()));
   sl.registerFactory(() => GetExpenseStatisticsUseCase(sl()));
+  sl.registerFactory(() => SaveRecurringExpenseRuleUseCase(sl()));
+  sl.registerLazySingleton(
+    () => ProcessDueRecurringExpensesUseCase(
+      recurringExpenseRepository: sl(),
+      expenseRepository: sl(),
+      generatedExpenseStore: sl(),
+      createExpenseUseCase: sl(),
+    ),
+  );
 
   // --------------------------------------------------------------------------
   // Cubit
@@ -82,6 +110,7 @@ Future<void> initInjection() async {
       createExpenseUseCase: sl(),
       updateExpenseUseCase: sl(),
       deleteExpenseUseCase: sl(),
+      processDueRecurringExpensesUseCase: sl(),
     ),
   );
   sl.registerFactory(
@@ -91,4 +120,7 @@ Future<void> initInjection() async {
     ),
   );
   sl.registerFactory(() => StatisticsCubit(getExpenseStatisticsUseCase: sl()));
+  sl.registerFactory(
+    () => RecurringExpenseCubit(repository: sl(), saveRuleUseCase: sl()),
+  );
 }

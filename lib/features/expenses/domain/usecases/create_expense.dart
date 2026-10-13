@@ -10,6 +10,10 @@ class CreateExpenseUseCase {
   CreateExpenseUseCase(this.repository, this.currencyRepository);
 
   Future<void> call(Expense expense) async {
+    await repository.addExpense(await prepareExpense(expense));
+  }
+
+  Future<Expense> prepareExpense(Expense expense) async {
     if (!expense.amount.isFinite || expense.amount <= 0) {
       throw ArgumentError.value(
         expense.amount,
@@ -44,6 +48,6 @@ class CreateExpenseUseCase {
       conversionRateCapturedAt: quote.capturedAt,
     );
 
-    return repository.addExpense(convertedExpense);
+    return convertedExpense;
   }
 }

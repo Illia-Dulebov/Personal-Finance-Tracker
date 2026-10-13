@@ -1,4 +1,5 @@
 import '../../../../core/constants/app_constants.dart';
+import '../../../currency/domain/entities/currency_code.dart';
 import '../../../expenses/domain/repositories/expense_repository.dart';
 import '../../../expenses/domain/utils/expense_amount_converter.dart';
 import '../entities/expense_statistics.dart';
@@ -28,11 +29,11 @@ class GetExpenseStatisticsUseCase {
     var unconvertedExpenseCount = 0;
     final categoryTotals = <String, double>{};
     final monthlyTotals = <DateTime, double>{};
-    final currencyTotals = <String, double>{};
+    final currencyTotals = <CurrencyCode, double>{};
 
     for (final expense in expenses) {
       currencyTotals.update(
-        expense.currency.value,
+        expense.currency,
         (amount) => amount + expense.amount,
         ifAbsent: () => expense.amount,
       );
@@ -79,11 +80,7 @@ class GetExpenseStatisticsUseCase {
         currencyTotals.entries
             .map(
               (entry) => CurrencySpending(
-                currency: expenses
-                    .firstWhere(
-                      (expense) => expense.currency.value == entry.key,
-                    )
-                    .currency,
+                currency: entry.key,
                 originalAmount: entry.value,
               ),
             )

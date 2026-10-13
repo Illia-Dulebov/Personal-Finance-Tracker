@@ -150,67 +150,119 @@ class _HomeExpenseList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    final visibleExpenseCount = showAll
+        ? expenses.length
+        : expenses.length.clamp(0, 6).toInt();
+    final itemCount = expenses.isEmpty ? 3 : visibleExpenseCount + 2;
+
+    return ListView.builder(
       padding: const EdgeInsets.only(bottom: 100),
-      children: [
-        Card(
-          margin: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-          color: AppTheme.paperSecondary,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${DateFormat('MMMM yyyy').format(month)} · spent so far',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(color: AppTheme.muted),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${monthlyTotal.toStringAsFixed(2)} ALL',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontFamily: 'serif',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _MonthlyExpenseSummaryCard(month: month, total: monthlyTotal);
+        }
+        if (index == 1) {
+          return _ExpenseListHeader(
+            expenseCount: expenses.length,
+            showAll: showAll,
+            onToggleAll: onToggleAll,
+          );
+        }
+        if (expenses.isEmpty) {
+          return const _EmptyExpenseState();
+        }
+
+        final expense = expenses[index - 2];
+        return ExpenseItemCard(
+          expense: expense,
+          onTap: () => onTap(expense),
+          onDelete: () => onDelete(expense.id),
+        );
+      },
+    );
+  }
+}
+
+class _MonthlyExpenseSummaryCard extends StatelessWidget {
+  final DateTime month;
+  final double total;
+
+  const _MonthlyExpenseSummaryCard({required this.month, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+      color: AppTheme.paperSecondary,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${DateFormat('MMMM yyyy').format(month)} · spent so far',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: AppTheme.muted),
             ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Recent expenses',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              '${total.toStringAsFixed(2)} ALL',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontFamily: 'serif',
+                fontWeight: FontWeight.w600,
               ),
-              if (expenses.length > 6)
-                TextButton(
-                  onPressed: onToggleAll,
-                  child: Text(showAll ? 'Show recent' : 'View all'),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
-        if (expenses.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 48),
-            child: Center(child: Text('No expenses recorded yet.')),
-          )
-        else
-          ...(showAll ? expenses : expenses.take(6)).map(
-            (expense) => ExpenseItemCard(
-              expense: expense,
-              onTap: () => onTap(expense),
-              onDelete: () => onDelete(expense.id),
+      ),
+    );
+  }
+}
+
+class _ExpenseListHeader extends StatelessWidget {
+  final int expenseCount;
+  final bool showAll;
+  final VoidCallback onToggleAll;
+
+  const _ExpenseListHeader({
+    required this.expenseCount,
+    required this.showAll,
+    required this.onToggleAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Recent expenses',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-      ],
+          if (expenseCount > 6)
+            TextButton(
+              onPressed: onToggleAll,
+              child: Text(showAll ? 'Show recent' : 'View all'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyExpenseState extends StatelessWidget {
+  const _EmptyExpenseState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: Center(child: Text('No expenses recorded yet.')),
     );
   }
 }

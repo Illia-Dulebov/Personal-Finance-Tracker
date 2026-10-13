@@ -4,7 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/budget_cubit.dart';
 import '../cubit/budget_state.dart';
 import '../widgets/budget_category_row.dart';
+import '../widgets/budget_month_selector.dart';
+import '../widgets/monthly_budget_summary_card.dart';
 import '../widgets/monthly_budget_form_dialog.dart';
+import '../../../recurring_expenses/presentation/screens/recurring_expense_rules_screen.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -38,27 +41,44 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Budget')),
-      body: BlocBuilder<BudgetCubit, BudgetState>(
-        builder: (context, state) => switch (state) {
-          BudgetInitialState() || BudgetLoadingState() => const Center(
-            child: CircularProgressIndicator(),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Budget'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Monthly budgets'),
+              Tab(text: 'Recurring expenses'),
+            ],
           ),
-          BudgetErrorState(message: final message) => Center(
-            child: Text(message),
-          ),
-          BudgetLoadedState() => _BudgetOverview(
-            state: state,
-            onPreviousMonth: () => context.read<BudgetCubit>().selectMonth(
-              DateTime(state.month.year, state.month.month - 1),
+        ),
+        body: TabBarView(
+          children: [
+            BlocBuilder<BudgetCubit, BudgetState>(
+              builder: (context, state) => switch (state) {
+                BudgetInitialState() || BudgetLoadingState() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                BudgetErrorState(message: final message) => Center(
+                  child: Text(message),
+                ),
+                BudgetLoadedState() => _BudgetOverview(
+                  state: state,
+                  onPreviousMonth: () =>
+                      context.read<BudgetCubit>().selectMonth(
+                        DateTime(state.month.year, state.month.month - 1),
+                      ),
+                  onNextMonth: () => context.read<BudgetCubit>().selectMonth(
+                    DateTime(state.month.year, state.month.month + 1),
+                  ),
+                  onEditBudget: (index) => _editBudget(context, state, index),
+                ),
+              },
             ),
-            onNextMonth: () => context.read<BudgetCubit>().selectMonth(
-              DateTime(state.month.year, state.month.month + 1),
-            ),
-            onEditBudget: (index) => _editBudget(context, state, index),
-          ),
-        },
+            const RecurringExpenseRulesScreen(),
+          ],
+        ),
       ),
     );
   }
@@ -81,28 +101,8 @@ class _BudgetOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Card(
-          color: Theme.of(context).colorScheme.surfaceContainerLow,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(
-                  'Total budgets: ${state.totalBudgetAmount.toStringAsFixed(2)} ALL',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Category limits for the selected month',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ),
-        _MonthSelector(
+        MonthlyBudgetSummaryCard(totalBudgetAmount: state.totalBudgetAmount),
+        BudgetMonthSelector(
           month: state.month,
           onPreviousMonth: onPreviousMonth,
           onNextMonth: onNextMonth,
@@ -119,54 +119,4 @@ class _BudgetOverview extends StatelessWidget {
       ],
     );
   }
-}
-
-class _MonthSelector extends StatelessWidget {
-  final DateTime month;
-  final VoidCallback onPreviousMonth;
-  final VoidCallback onNextMonth;
-
-  const _MonthSelector({
-    required this.month,
-    required this.onPreviousMonth,
-    required this.onNextMonth,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          onPressed: onPreviousMonth,
-          icon: const Icon(Icons.chevron_left),
-          tooltip: 'Previous month',
-        ),
-        Text(
-          '${_monthNames[month.month - 1]} ${month.year}',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        IconButton(
-          onPressed: onNextMonth,
-          icon: const Icon(Icons.chevron_right),
-          tooltip: 'Next month',
-        ),
-      ],
-    );
-  }
-
-  static const _monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
 }

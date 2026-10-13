@@ -301,6 +301,31 @@ void main() {
       expect(find.text('Expense 6'), findsOneWidget);
     });
 
+    testWidgets('builds only visible expense cards when showing all', (
+      tester,
+    ) async {
+      for (var index = 0; index < 100; index++) {
+        await fakeRepo.addExpense(
+          Expense(
+            id: 'expense-$index',
+            amount: index + 1,
+            currency: CurrencyCode.all,
+            date: DateTime.now().subtract(Duration(days: index)),
+            category: sampleCategory,
+            paymentMethod: PaymentMethod.cash,
+            description: 'Expense $index',
+          ),
+        );
+      }
+
+      await tester.pumpWidget(buildExpenseListApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('View all'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ExpenseItemCard).evaluate().length, lessThan(100));
+    });
+
     testWidgets('requires confirmation before deleting an expense', (
       tester,
     ) async {

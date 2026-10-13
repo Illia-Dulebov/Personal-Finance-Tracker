@@ -61,6 +61,18 @@ If a category has expenses but no budget exists:
 - A recurring expense is a template for generating future expenses.
 - Generated expenses behave like normal expenses.
 - Recurring rules are not counted as spending until an expense is created.
-- Recurring rules will have lastGeneratedDate and nextGenerationDate for better time manipulation
-- If nextGenerationDate is in the past: user opened app after this date, the app will create every
-  expense for the period that took place
+- Recurring rules store `lastGeneratedDate` and `nextGenerationDate`.
+- Daily rules occur every calendar day; weekly rules use a selected weekday;
+  monthly rules use a selected day of the month.
+- If a monthly scheduled day does not exist, the occurrence is clamped to the
+  last day of that month. The rule retains its selected day for later months.
+- A new rule's first occurrence is scheduled on or after its creation day.
+- Editing a rule recalculates its next occurrence strictly after the edit day;
+  missed occurrences under its previous schedule are not backfilled.
+- On app entry, every due occurrence from `nextGenerationDate` through the
+  current day is generated, including missed occurrences.
+- Each occurrence is identified independently of its generated expense.
+  Retrying generation must not duplicate it, and deleting a generated expense
+  must not cause that occurrence to be recreated.
+- Save a generated expense and its processed-occurrence marker together before
+  advancing the rule's generation dates.
