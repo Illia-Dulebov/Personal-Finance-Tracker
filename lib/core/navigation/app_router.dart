@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/app_theme.dart';
 import '../../features/budgets/presentation/screens/budget_screen.dart';
 import '../../features/currency/domain/repositories/currency_repository.dart';
 import '../../features/expenses/domain/entities/expense.dart';
@@ -15,30 +16,7 @@ final appRouter = GoRouter(
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => Scaffold(
         body: navigationShell,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) => navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          ),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.query_stats_outlined),
-              selectedIcon: Icon(Icons.query_stats),
-              label: 'Statistics',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet),
-              label: 'Budget',
-            ),
-          ],
-        ),
+        bottomNavigationBar: _AppTabBar(navigationShell: navigationShell),
       ),
       branches: [
         StatefulShellBranch(
@@ -89,3 +67,62 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+class _AppTabBar extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const _AppTabBar({required this.navigationShell});
+
+  static const _items = [
+    ('🏠', 'Home'),
+    ('📊', 'Statistics'),
+    ('🗂️', 'Budget'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: 58,
+        decoration: const BoxDecoration(
+          color: AppTheme.paper,
+          border: Border(top: BorderSide(color: AppTheme.line)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            for (var index = 0; index < _items.length; index++)
+              Expanded(
+                child: InkWell(
+                  onTap: () => navigationShell.goBranch(
+                    index,
+                    initialLocation: index == navigationShell.currentIndex,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _items[index].$1,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _items[index].$2,
+                        style: TextStyle(
+                          color: index == navigationShell.currentIndex
+                              ? AppTheme.ink
+                              : AppTheme.muted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

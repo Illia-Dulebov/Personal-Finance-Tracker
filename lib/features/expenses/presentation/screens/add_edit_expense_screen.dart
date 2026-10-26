@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../currency/domain/currency_catalog.dart';
+import '../../../../core/theme/app_ui_tokens.dart';
 import '../../../currency/domain/entities/currency_code.dart';
 import '../../../currency/domain/repositories/currency_repository.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
 import '../cubit/conversion_preview_cubit.dart';
-import '../cubit/conversion_preview_state.dart';
+import '../models/expense_edit_result.dart';
+import '../widgets/delete_expense_confirmation_dialog.dart';
+import '../widgets/expense_form.dart';
 
 class AddEditExpenseScreen extends StatefulWidget {
   final Expense? expense;
@@ -55,15 +56,12 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
 
     _selectedCategory = expense != null
         ? AppConstants.defaultCategories.firstWhere(
-            (c) => c.id == expense.category.id,
+            (category) => category.id == expense.category.id,
             orElse: () => expense.category,
           )
         : AppConstants.defaultCategories.first;
 
-    _selectedPaymentMethod = expense != null
-        ? expense.paymentMethod
-        : PaymentMethod.cash;
-
+    _selectedPaymentMethod = expense?.paymentMethod ?? PaymentMethod.card;
     _selectedDate = expense != null ? expense.date : DateTime.now();
     _conversionPreviewCubit = ConversionPreviewCubit(
       currencyRepository: widget.currencyRepository,
@@ -137,247 +135,60 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     Navigator.of(context).pop(resultExpense);
   }
 
+  Future<void> _deleteExpense() async {
+    final shouldDelete = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (_) => const DeleteExpenseConfirmationDialog(),
+    );
+    if (shouldDelete == true && mounted) {
+      Navigator.of(context).pop(ExpenseDeleted(widget.expense!.id));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: _conversionPreviewCubit,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
+          toolbarHeight: 48,
+          title: Text(_isEditing ? 'Edit expense' : 'Add expense'),
+          titleTextStyle: AppTextStyles.caption.copyWith(fontSize: 13),
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: _ExpenseForm(
-            formKey: _formKey,
-            amountController: _amountController,
-            descriptionController: _descriptionController,
-            isEditing: _isEditing,
-            existingCurrency: widget.expense?.currency,
-            selectedCurrency: _selectedCurrency,
-            selectedCategory: _selectedCategory,
-            selectedPaymentMethod: _selectedPaymentMethod,
-            selectedDate: _selectedDate,
-            onCurrencyChanged: (currency) {
-              setState(() => _selectedCurrency = currency);
-              _refreshConversionPreview();
-            },
-            onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
-            onPaymentMethodChanged: (pm) =>
-                setState(() => _selectedPaymentMethod = pm),
-            onPickDate: _pickDate,
-            onSubmit: _submit,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExpenseForm extends StatelessWidget {
-  final GlobalKey<FormState> formKey;
-  final TextEditingController amountController;
-  final TextEditingController descriptionController;
-  final bool isEditing;
-  final CurrencyCode? existingCurrency;
-  final CurrencyCode selectedCurrency;
-  final Category selectedCategory;
-  final PaymentMethod selectedPaymentMethod;
-  final DateTime selectedDate;
-  final ValueChanged<Category> onCategoryChanged;
-  final ValueChanged<CurrencyCode> onCurrencyChanged;
-  final ValueChanged<PaymentMethod> onPaymentMethodChanged;
-  final VoidCallback onPickDate;
-  final VoidCallback onSubmit;
-
-  const _ExpenseForm({
-    required this.formKey,
-    required this.amountController,
-    required this.descriptionController,
-    required this.isEditing,
-    this.existingCurrency,
-    required this.selectedCurrency,
-    required this.selectedCategory,
-    required this.selectedPaymentMethod,
-    required this.selectedDate,
-    required this.onCategoryChanged,
-    required this.onCurrencyChanged,
-    required this.onPaymentMethodChanged,
-    required this.onPickDate,
-    required this.onSubmit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextFormField(
-            controller: amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Amount',
-              border: OutlineInputBorder(),
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.sm,
+              AppSpacing.xl,
+              AppSpacing.xxl,
             ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Please enter an amount';
-              }
-              final parsed = double.tryParse(value.trim());
-              if (parsed == null || !parsed.isFinite || parsed <= 0) {
-                return 'Amount must be a positive number';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          if (!isEditing) ...[
-            DropdownButtonFormField<CurrencyCode>(
-              initialValue: selectedCurrency,
-              decoration: const InputDecoration(
-                labelText: 'Currency',
-                border: OutlineInputBorder(),
-              ),
-              items: CurrencyCatalog.supported
-                  .map(
-                    (currency) => DropdownMenuItem(
-                      value: currency.code,
-                      child: Text('${currency.code.value} - ${currency.name}'),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (currency) {
-                if (currency != null) onCurrencyChanged(currency);
+            child: ExpenseForm(
+              formKey: _formKey,
+              amountController: _amountController,
+              descriptionController: _descriptionController,
+              isEditing: _isEditing,
+              existingCurrency: widget.expense?.currency,
+              selectedCurrency: _selectedCurrency,
+              selectedCategory: _selectedCategory,
+              selectedPaymentMethod: _selectedPaymentMethod,
+              selectedDate: _selectedDate,
+              onCurrencyChanged: (currency) {
+                setState(() => _selectedCurrency = currency);
+                _refreshConversionPreview();
               },
-            ),
-            const SizedBox(height: 16),
-          ] else ...[
-            _ImmutableCurrencyBadge(
-              currency: existingCurrency ?? CurrencyCode.all,
-            ),
-            const SizedBox(height: 16),
-          ],
-          BlocBuilder<ConversionPreviewCubit, ConversionPreviewState>(
-            builder: (context, state) {
-              if (state.isLoading) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Text('Calculating base-currency equivalent...'),
-                );
-              }
-              if (state.error != null) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    state.error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                );
-              }
-              if (state.preview != null) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    'Approximate equivalent: ${state.preview}'
-                    '${isEditing ? '' : ' (reference rate; not live)'}',
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-          DropdownButtonFormField<Category>(
-            initialValue: selectedCategory,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              border: OutlineInputBorder(),
-            ),
-            items: AppConstants.defaultCategories
-                .map(
-                  (cat) => DropdownMenuItem(
-                    value: cat,
-                    child: Text('${cat.emoji} ${cat.name}'),
-                  ),
-                )
-                .toList(),
-            onChanged: (cat) {
-              if (cat != null) onCategoryChanged(cat);
-            },
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<PaymentMethod>(
-            initialValue: selectedPaymentMethod,
-            decoration: const InputDecoration(
-              labelText: 'Payment Method',
-              border: OutlineInputBorder(),
-            ),
-            items: PaymentMethod.values
-                .map((pm) => DropdownMenuItem(value: pm, child: Text(pm.label)))
-                .toList(),
-            onChanged: (pm) {
-              if (pm != null) onPaymentMethodChanged(pm);
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Description (Optional)',
-              border: OutlineInputBorder(),
+              onCategoryChanged: (category) =>
+                  setState(() => _selectedCategory = category),
+              onPaymentMethodChanged: (method) =>
+                  setState(() => _selectedPaymentMethod = method),
+              onPickDate: _pickDate,
+              onSubmit: _submit,
+              onDelete: _isEditing ? _deleteExpense : null,
             ),
           ),
-          const SizedBox(height: 16),
-          _DateSelectorButton(
-            selectedDate: selectedDate,
-            onPressed: onPickDate,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton(
-            onPressed: onSubmit,
-            child: Text(isEditing ? 'Update Expense' : 'Save Expense'),
-          ),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class _DateSelectorButton extends StatelessWidget {
-  final DateTime selectedDate;
-  final VoidCallback onPressed;
-
-  const _DateSelectorButton({
-    required this.selectedDate,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.calendar_today),
-      label: Text('Date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}'),
-    );
-  }
-}
-
-class _ImmutableCurrencyBadge extends StatelessWidget {
-  final CurrencyCode currency;
-
-  const _ImmutableCurrencyBadge({required this.currency});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text('Currency: ${currency.value} (Immutable)'),
     );
   }
 }

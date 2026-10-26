@@ -33,10 +33,10 @@ void main() {
     expect(find.text('No expenses recorded yet.'), findsOneWidget);
 
     // 2. Open Add Expense form
-    await tester.tap(find.text('Add Expense'));
+    await tester.tap(find.byTooltip('Add expense'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add Expense'), findsOneWidget);
+    expect(find.text('Add expense'), findsOneWidget);
 
     // 3. Fill in Form
     final amountField = find.byType(TextFormField).first;
@@ -47,7 +47,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Submit form
-    await tester.tap(find.text('Save Expense'));
+    await tester.tap(find.text('Save expense'));
     await tester.pumpAndSettle();
 
     // 4. Verify item appears in dashboard
@@ -70,8 +70,8 @@ void main() {
     await tester.tap(find.text('Dinner'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Edit Expense'), findsOneWidget);
-    expect(find.text('Currency: ALL (Immutable)'), findsOneWidget);
+    expect(find.text('Edit expense'), findsOneWidget);
+    expect(find.text('Currency ALL · locked after creation'), findsOneWidget);
 
     // Edit amount to 200
     final editAmountField = find.byType(TextFormField).first;
@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Submit update
-    await tester.tap(find.text('Update Expense'));
+    await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
 
     // 6. Verify dashboard displays updated amount
@@ -97,8 +97,11 @@ void main() {
     await tester.tap(find.text('Home').last);
     await tester.pumpAndSettle();
 
-    // 7. Delete expense item
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    // 7. Delete the expense from its edit screen
+    await tester.tap(find.text('Dinner'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Delete expense'));
+    await tester.tap(find.text('Delete expense'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();

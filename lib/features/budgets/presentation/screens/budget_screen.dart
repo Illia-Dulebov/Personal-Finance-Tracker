@@ -46,11 +46,32 @@ class _BudgetScreenState extends State<BudgetScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Budget'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Monthly budgets'),
-              Tab(text: 'Recurring expenses'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(54),
+            child: Container(
+              height: 40,
+              margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFDAD3C3)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const TabBar(
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicatorPadding: EdgeInsets.all(1),
+                indicator: BoxDecoration(
+                  color: Color(0xFF1C2437),
+                  borderRadius: BorderRadius.all(Radius.circular(9)),
+                ),
+                labelColor: Color(0xFFF6F3EC),
+                unselectedLabelColor: Color(0xFF1C2437),
+                labelStyle: TextStyle(fontSize: 12),
+                tabs: [
+                  Tab(text: 'Categories'),
+                  Tab(text: 'Recurring rules'),
+                ],
+              ),
+            ),
           ),
         ),
         body: TabBarView(
@@ -108,15 +129,59 @@ class _BudgetOverview extends StatelessWidget {
           onNextMonth: onNextMonth,
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: state.summaries.length,
-            itemBuilder: (context, index) => BudgetCategoryRow(
-              summary: state.summaries[index],
-              onSetBudget: () => onEditBudget(index),
-            ),
+          child: Stack(
+            children: [
+              ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 88),
+                itemCount: state.summaries.length,
+                itemBuilder: (context, index) => BudgetCategoryRow(
+                  summary: state.summaries[index],
+                  onSetBudget: () => onEditBudget(index),
+                ),
+              ),
+              Positioned(
+                right: 20,
+                bottom: 16,
+                child: FloatingActionButton(
+                  onPressed: () => _chooseBudgetCategory(context),
+                  heroTag: 'budget-add-category',
+                  backgroundColor: const Color(0xFF1C2437),
+                  foregroundColor: const Color(0xFFF6F3EC),
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.add),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _chooseBudgetCategory(BuildContext context) async {
+    final selectedIndex = await showModalBottomSheet<int>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Text(
+                'Choose a category',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+            for (var index = 0; index < state.summaries.length; index++)
+              ListTile(
+                leading: Text(state.summaries[index].category.emoji),
+                title: Text(state.summaries[index].category.name),
+                onTap: () => Navigator.of(context).pop(index),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selectedIndex != null) onEditBudget(selectedIndex);
   }
 }

@@ -26,35 +26,54 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: paper,
+      fontFamily: 'Work Sans',
       appBarTheme: const AppBarTheme(
         backgroundColor: paper,
         foregroundColor: ink,
         centerTitle: true,
         elevation: 0,
-      ),
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        elevation: 0,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: line),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Fraunces',
+          color: ink,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
         ),
+      ),
+      dividerColor: line,
+      cardTheme: CardThemeData(
+        color: paper,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: const RoundedRectangleBorder(),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: paper,
-        indicatorColor: paperSecondary,
+        indicatorColor: Colors.transparent,
+        height: 58,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             color: states.contains(WidgetState.selected) ? ink : muted,
-            fontSize: 12,
+            fontSize: 10,
           ),
         ),
       ),
-      textTheme: Typography.material2021().black.apply(
-        bodyColor: ink,
-        displayColor: ink,
-      ),
+      textTheme: Typography.material2021().black
+          .apply(fontFamily: 'Work Sans', bodyColor: ink, displayColor: ink)
+          .copyWith(
+            headlineMedium: const TextStyle(
+              fontFamily: 'Fraunces',
+              fontSize: 34,
+              fontWeight: FontWeight.w500,
+              color: ink,
+            ),
+            titleLarge: const TextStyle(
+              fontFamily: 'Fraunces',
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+              color: ink,
+            ),
+          ),
     );
   }
 }

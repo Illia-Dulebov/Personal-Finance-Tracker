@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_ui_tokens.dart';
 import '../../../budgets/presentation/cubit/budget_cubit.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/utils/expense_amount_converter.dart';
 import '../cubit/expense_cubit.dart';
 import '../cubit/expense_state.dart';
+import '../models/expense_edit_result.dart';
 import '../widgets/delete_expense_confirmation_dialog.dart';
 import '../widgets/expense_item_card.dart';
 
@@ -38,13 +40,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   Future<void> _navigateToEditExpense(Expense expense) async {
-    final updatedExpense = await context.push<Expense>(
-      '/expense/edit',
-      extra: expense,
-    );
+    final result = await context.push<Object?>('/expense/edit', extra: expense);
 
-    if (updatedExpense != null && mounted) {
-      await context.read<ExpenseCubit>().updateExpense(updatedExpense);
+    if (result is Expense && mounted) {
+      await context.read<ExpenseCubit>().updateExpense(result);
+      await _refreshBudget();
+    } else if (result is ExpenseDeleted && mounted) {
+      await context.read<ExpenseCubit>().deleteExpense(result.id);
       await _refreshBudget();
     }
   }
@@ -71,7 +73,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
       body: BlocBuilder<ExpenseCubit, ExpenseState>(
         builder: (context, state) {
           final now = DateTime.now();
@@ -104,10 +105,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           };
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddExpense,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Expense'),
+        tooltip: 'Add expense',
+        heroTag: 'home-add-expense',
+        backgroundColor: AppTheme.ink,
+        foregroundColor: AppTheme.paper,
+        elevation: 6,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, size: 26),
       ),
     );
   }
@@ -156,7 +162,7 @@ class _HomeExpenseList extends StatelessWidget {
     final itemCount = expenses.isEmpty ? 3 : visibleExpenseCount + 2;
 
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 100),
+      padding: const EdgeInsets.only(bottom: 88),
       itemCount: itemCount,
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -192,29 +198,35 @@ class _MonthlyExpenseSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-      color: AppTheme.paperSecondary,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${DateFormat('MMMM yyyy').format(month)} · spent so far',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: AppTheme.muted),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${total.toStringAsFixed(2)} ALL',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontFamily: 'serif',
-                fontWeight: FontWeight.w600,
+    return SafeArea(
+      top: true,
+      child: Card(
+        color: AppTheme.paper,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.md,
+            AppSpacing.xl,
+            AppSpacing.md + 2,
+          ),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppTheme.line)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${DateFormat('MMMM yyyy').format(month)} · spent so far',
+                style: AppTextStyles.caption.copyWith(letterSpacing: .2),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xs / 2),
+              Text(
+                '${NumberFormat('#,##0.00').format(total)} ALL',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -235,17 +247,27 @@ class _ExpenseListHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.md,
+        0,
+      ),
       child: Row(
         children: [
-          Expanded(
+          const Expanded(
             child: Text(
               'Recent expenses',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
           if (expenseCount > 6)
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.muted,
+                textStyle: const TextStyle(fontSize: 12),
+                visualDensity: VisualDensity.compact,
+              ),
               onPressed: onToggleAll,
               child: Text(showAll ? 'Show recent' : 'View all'),
             ),

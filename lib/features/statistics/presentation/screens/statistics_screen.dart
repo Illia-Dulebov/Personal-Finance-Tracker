@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'dart:math' as math;
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_ui_tokens.dart';
 import '../../../currency/domain/entities/currency_code.dart';
 import '../../../expenses/presentation/cubit/expense_cubit.dart';
 import '../../../expenses/presentation/cubit/expense_state.dart';
@@ -127,100 +129,153 @@ class _StatisticsContent extends StatelessWidget {
     final dateLabel =
         '${DateFormat.yMMMd().format(filter.startDate)} – '
         '${DateFormat.yMMMd().format(filter.endDateExclusive.subtract(const Duration(days: 1)))}';
+    final maxAmount = statistics.categorySpending.fold<double>(
+      0,
+      (maximum, item) => math.max(maximum, item.amountInAll),
+    );
+    final categoryName = filter.categoryId == null
+        ? 'All categories'
+        : statistics.availableCategories
+              .firstWhere((item) => item.id == filter.categoryId)
+              .name;
+    final periodLabel = switch (filter.period) {
+      StatisticsPeriod.today => 'Today',
+      StatisticsPeriod.thisWeek => 'This week',
+      StatisticsPeriod.thisMonth => 'This month',
+      StatisticsPeriod.month => 'Choose month',
+      StatisticsPeriod.custom => 'Custom range',
+    };
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.md + 2,
+        AppSpacing.xl,
+        AppSpacing.xxl + 8,
+      ),
       children: [
-        DropdownButtonFormField<StatisticsPeriod>(
-          initialValue: filter.period,
-          decoration: const InputDecoration(
-            labelText: 'Period',
-            border: OutlineInputBorder(),
-          ),
-          items: const [
-            DropdownMenuItem(
-              value: StatisticsPeriod.today,
-              child: Text('Today'),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            _FilterChipMenu<StatisticsPeriod>(
+              label: periodLabel,
+              selected: filter.period == StatisticsPeriod.thisMonth,
+              items: const [
+                PopupMenuItem(
+                  value: StatisticsPeriod.today,
+                  child: Text('Today'),
+                ),
+                PopupMenuItem(
+                  value: StatisticsPeriod.thisWeek,
+                  child: Text('This week'),
+                ),
+                PopupMenuItem(
+                  value: StatisticsPeriod.thisMonth,
+                  child: Text('This month'),
+                ),
+                PopupMenuItem(
+                  value: StatisticsPeriod.month,
+                  child: Text('Choose month'),
+                ),
+                PopupMenuItem(
+                  value: StatisticsPeriod.custom,
+                  child: Text('Custom range'),
+                ),
+              ],
+              onSelected: onPeriodChanged,
             ),
-            DropdownMenuItem(
-              value: StatisticsPeriod.thisWeek,
-              child: Text('This week'),
+            _FilterChipMenu<_FilterOption<String>>(
+              label: categoryName,
+              items: [
+                const PopupMenuItem<_FilterOption<String>>(
+                  value: _FilterOption(null),
+                  child: Text('All categories'),
+                ),
+                ...statistics.availableCategories.map(
+                  (category) => PopupMenuItem<_FilterOption<String>>(
+                    value: _FilterOption(category.id),
+                    child: Text('${category.emoji} ${category.name}'),
+                  ),
+                ),
+              ],
+              onSelected: (option) {
+                final id = option.value;
+                final category = id == null
+                    ? null
+                    : statistics.availableCategories.firstWhere(
+                        (item) => item.id == id,
+                      );
+                context.read<StatisticsCubit>().selectCategory(category);
+              },
             ),
-            DropdownMenuItem(
-              value: StatisticsPeriod.thisMonth,
-              child: Text('This month'),
-            ),
-            DropdownMenuItem(
-              value: StatisticsPeriod.month,
-              child: Text('Choose month'),
-            ),
-            DropdownMenuItem(
-              value: StatisticsPeriod.custom,
-              child: Text('Custom range'),
+            _FilterChipMenu<_FilterOption<String>>(
+              label: filter.currency?.value ?? 'All currencies',
+              items: [
+                const PopupMenuItem<_FilterOption<String>>(
+                  value: _FilterOption(null),
+                  child: Text('All currencies'),
+                ),
+                ...CurrencyCode.values.map(
+                  (currency) => PopupMenuItem<_FilterOption<String>>(
+                    value: _FilterOption(currency.value),
+                    child: Text(currency.value),
+                  ),
+                ),
+              ],
+              onSelected: (option) {
+                final value = option.value;
+                final currency = value == null
+                    ? null
+                    : CurrencyCode.fromValue(value);
+                context.read<StatisticsCubit>().selectCurrency(currency);
+              },
             ),
           ],
-          onChanged: (period) {
-            if (period != null) onPeriodChanged(period);
-          },
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 16),
-          child: Text(
-            dateLabel,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.muted),
+          padding: const EdgeInsets.only(
+            top: AppSpacing.sm,
+            bottom: AppSpacing.md,
+          ),
+          child: Text(dateLabel, style: AppTextStyles.caption),
+        ),
+        if (statistics.categorySpending.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text('No converted spending for this selection.'),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+            child: Column(
+              children: [
+                for (final item in statistics.categorySpending)
+                  _StatisticsBarRow(
+                    label: item.category.name,
+                    amount: item.amountInAll,
+                    widthFactor: maxAmount == 0
+                        ? 0
+                        : (item.amountInAll / maxAmount)
+                              .clamp(0.0, 1.0)
+                              .toDouble(),
+                  ),
+              ],
+            ),
+          ),
+        Container(
+          margin: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.ink),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'Make report',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ),
-        Row(
-          children: [
-            Expanded(
-              child: _FilterDropdown<String>(
-                label: 'Category',
-                value: filter.categoryId,
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('All')),
-                  ...statistics.availableCategories.map(
-                    (category) => DropdownMenuItem(
-                      value: category.id,
-                      child: Text('${category.emoji} ${category.name}'),
-                    ),
-                  ),
-                ],
-                onChanged: (id) {
-                  final category = id == null
-                      ? null
-                      : statistics.availableCategories.firstWhere(
-                          (item) => item.id == id,
-                        );
-                  context.read<StatisticsCubit>().selectCategory(category);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _FilterDropdown<String>(
-                label: 'Currency',
-                value: filter.currency?.value,
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('All')),
-                  ...CurrencyCode.values.map(
-                    (currency) => DropdownMenuItem(
-                      value: currency.value,
-                      child: Text(currency.value),
-                    ),
-                  ),
-                ],
-                onChanged: (value) {
-                  final currency = value == null
-                      ? null
-                      : CurrencyCode.fromValue(value);
-                  context.read<StatisticsCubit>().selectCurrency(currency);
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         _TotalCard(statistics: statistics),
         if (statistics.unconvertedExpenseCount > 0)
           Padding(
@@ -283,30 +338,107 @@ class _StatisticsContent extends StatelessWidget {
   }
 }
 
-class _FilterDropdown<T> extends StatelessWidget {
+class _FilterChipMenu<T> extends StatelessWidget {
   final String label;
-  final T? value;
-  final List<DropdownMenuItem<T>> items;
-  final ValueChanged<T?> onChanged;
+  final bool selected;
+  final List<PopupMenuEntry<T>> items;
+  final ValueChanged<T> onSelected;
 
-  const _FilterDropdown({
+  const _FilterChipMenu({
     required this.label,
-    required this.value,
+    this.selected = false,
     required this.items,
-    required this.onChanged,
+    required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
+    return PopupMenuButton<T>(
+      itemBuilder: (_) => items,
+      onSelected: onSelected,
+      padding: EdgeInsets.zero,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 7,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.ink : Colors.white,
+          border: Border.all(color: selected ? AppTheme.ink : AppTheme.line),
+          borderRadius: BorderRadius.circular(AppRadii.chip),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.chip.copyWith(
+            color: selected ? AppTheme.paper : AppTheme.ink,
+          ),
+        ),
       ),
-      items: items,
-      onChanged: onChanged,
+    );
+  }
+}
+
+class _FilterOption<T> {
+  final T? value;
+
+  const _FilterOption(this.value);
+}
+
+class _StatisticsBarRow extends StatelessWidget {
+  final String label;
+  final double amount;
+  final double widthFactor;
+
+  const _StatisticsBarRow({
+    required this.label,
+    required this.amount,
+    required this.widthFactor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md + 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 64,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.chip.copyWith(color: AppTheme.muted),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: SizedBox(
+                height: 16,
+                child: Stack(
+                  children: [
+                    const ColoredBox(color: AppTheme.paperSecondary),
+                    FractionallySizedBox(
+                      widthFactor: widthFactor,
+                      child: const ColoredBox(color: AppTheme.gold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 64,
+            child: Text(
+              '${amount.toStringAsFixed(0)} ALL',
+              textAlign: TextAlign.right,
+              style: AppTextStyles.amountSmall.copyWith(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

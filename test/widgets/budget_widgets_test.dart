@@ -81,8 +81,8 @@ void main() {
 
     expect(find.text('March 2026'), findsOneWidget);
     expect(find.text('Total budgets: 0.00 ALL'), findsOneWidget);
-    expect(find.text('Spent: 50.00 ALL'), findsOneWidget);
-    expect(find.text('No limit configured'), findsOneWidget);
+    expect(find.text('50.00 ALL'), findsOneWidget);
+    expect(find.text('No budget set for this category'), findsAtLeastNWidgets(1));
 
     await tester.tap(find.text('Set budget').first);
     await tester.pumpAndSettle();
@@ -90,9 +90,9 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Budget: 100.00 ALL'), findsOneWidget);
+    expect(find.text('50.00 / 100.00 ALL'), findsOneWidget);
     expect(find.text('Remaining: 50.00 ALL'), findsOneWidget);
     expect(find.text('Total budgets: 100.00 ALL'), findsOneWidget);
-    expect(find.text('No limit configured'), findsNothing);
+    expect(find.text('No budget set for this category'), findsAtLeastNWidgets(1));
   });
 }

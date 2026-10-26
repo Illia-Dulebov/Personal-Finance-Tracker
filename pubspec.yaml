@@ -31,5 +31,21 @@ dev_dependencies:
 flutter:
 
   uses-material-design: true
-
+  fonts:
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/fraunces/Fraunces.ttf
+          weight: 400
+        - asset: assets/fonts/fraunces/Fraunces.ttf
+          weight: 500
+        - asset: assets/fonts/fraunces/Fraunces.ttf
+          weight: 600
+    - family: Work Sans
+      fonts:
+        - asset: assets/fonts/work_sans/WorkSans.ttf
+          weight: 400
+        - asset: assets/fonts/work_sans/WorkSans.ttf
+          weight: 500
+        - asset: assets/fonts/work_sans/WorkSans.ttf
+          weight: 600
 

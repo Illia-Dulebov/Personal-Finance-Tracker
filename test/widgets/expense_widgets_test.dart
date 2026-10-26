@@ -73,7 +73,7 @@ void main() {
       // Verify text elements
       expect(find.text('🍔'), findsOneWidget);
       expect(find.text('Lunch with team'), findsOneWidget);
-      expect(find.text('150.00 ALL'), findsOneWidget);
+      expect(find.text('−150.00 ALL'), findsOneWidget);
       expect(find.textContaining('Cash'), findsOneWidget);
 
       // Test card tap
@@ -101,14 +101,17 @@ void main() {
       );
 
       // Tap Save without entering amount
-      await tester.tap(find.text('Save Expense'));
+      await tester.ensureVisible(find.text('Save expense'));
+      await tester.tap(find.text('Save expense'));
       await tester.pumpAndSettle();
 
       expect(find.text('Please enter an amount'), findsOneWidget);
 
       // Enter invalid negative amount
+      await tester.ensureVisible(find.byType(TextFormField).first);
       await tester.enterText(find.byType(TextFormField).first, '-50');
-      await tester.tap(find.text('Save Expense'));
+      await tester.ensureVisible(find.text('Save expense'));
+      await tester.tap(find.text('Save expense'));
       await tester.pumpAndSettle();
 
       expect(find.text('Amount must be a positive number'), findsOneWidget);
@@ -129,13 +132,16 @@ void main() {
         );
 
         // Verify title shows Edit Expense
-        expect(find.text('Edit Expense'), findsOneWidget);
+        expect(find.text('Edit expense'), findsOneWidget);
 
         // Verify pre-filled description
         expect(find.text('Lunch with team'), findsOneWidget);
 
         // Verify Currency is immutable text and not an editable TextFormField
-        expect(find.text('Currency: ALL (Immutable)'), findsOneWidget);
+        expect(
+          find.text('Currency ALL · locked after creation'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -159,9 +165,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.byType(DropdownButtonFormField<CurrencyCode>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('EUR - Euro').last);
+      await tester.tap(find.text('EUR'));
       await tester.pumpAndSettle();
 
       expect(
@@ -221,7 +225,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Lunch with team'), findsOneWidget);
-      expect(find.text('150.00 ALL'), findsOneWidget);
+      expect(find.text('−150.00 ALL'), findsOneWidget);
     });
 
     testWidgets('shows current-month total in ALL using saved conversions', (

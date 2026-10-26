@@ -7,25 +7,22 @@ class MonthlyBudgetSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Total budgets: ${totalBudgetAmount.toStringAsFixed(2)} ALL',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Category limits for the selected month',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Column(
+        children: [
+          Text(
+            'Total budgets: ${totalBudgetAmount.toStringAsFixed(2)} ALL',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Category limits for the selected month',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF8A8578)),
+          ),
+        ],
       ),
     );
   }
